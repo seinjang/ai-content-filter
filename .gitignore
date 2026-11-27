@@ -16,3 +16,6 @@ dist/
 
 # Local data
 dump.rdb
+
+# Extension e2e output
+extension/e2e/screenshot.png

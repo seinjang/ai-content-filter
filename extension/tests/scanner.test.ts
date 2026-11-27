@@ -1,0 +1,129 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { BADGE_TAG } from '@/lib/badge';
+import { findTargets, Scanner } from '@/lib/scanner';
+import type { ScoreResult } from '@/lib/types';
+
+// 실제 검색 결과처럼 같은 글을 가리키는 링크가 여러 개(썸네일, 제목, 요약)인 구조
+const RESULTS = `
+  <ul>
+    <li class="item">
+      <a href="https://blog.naver.com/info_bot/100"><img alt=""></a>
+      <a href="https://blog.naver.com/info_bot/100">2025 무선청소기 추천 순위 TOP 7 총정리</a>
+      <a href="https://blog.naver.com/info_bot/100">무선청소기 추천…</a>
+    </li>
+    <li class="item">
+      <a href="https://m.blog.naver.com/walker/200">망원동 작은 로스터리에서 핸드드립 마신 날</a>
+    </li>
+    <li class="item"><a href="https://news.naver.com/x">뉴스 결과는 무시</a></li>
+  </ul>`;
+
+function ready(url: string, blogId: string, score: number, level: ScoreResult['level']): ScoreResult {
+  return { url, status: 'ready', blog_id: blogId, score, level, reasons: ['근거'] };
+}
+
+const chipText = (host: Element) => host.shadowRoot!.querySelector('.label')!.textContent;
+
+describe('findTargets', () => {
+  it('picks the longest-text link per post as its title', () => {
+    document.body.innerHTML = RESULTS;
+    const targets = findTargets(document);
+    expect(targets.map((t) => t.anchor.textContent)).toEqual([
+      '2025 무선청소기 추천 순위 TOP 7 총정리',
+      '망원동 작은 로스터리에서 핸드드립 마신 날',
+    ]);
+  });
+});
+
+describe('Scanner', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    document.body.innerHTML = RESULTS;
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('shows loading, then polls pending results until ready', async () => {
+    const scores = vi
+      .fn()
+      .mockResolvedValueOnce([
+        ready('https://blog.naver.com/info_bot/100', 'info_bot', 94, 'high'),
+        { url: 'https://m.blog.naver.com/walker/200', status: 'pending', blog_id: 'walker', score: null, level: null, reasons: [] },
+      ])
+      .mockResolvedValueOnce([ready('https://m.blog.naver.com/walker/200', 'walker', 0, 'low')]);
+    const scanner = new Scanner(document, { scores, feedback: vi.fn(), pollIntervalMs: 1000 });
+
+    await scanner.scan();
+    const badges = [...document.querySelectorAll(BADGE_TAG)];
+    expect(badges).toHaveLength(2);
+    expect(badges.map(chipText)).toEqual(['양산형 의심 높음', '분석 중']);
+
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(scores).toHaveBeenLastCalledWith(['https://m.blog.naver.com/walker/200']);
+    expect(chipText(badges[1]!)).toBe('양산형 의심 낮음');
+  });
+
+  it('gives up after maxPolls', async () => {
+    const pending = (urls: string[]) =>
+      urls.map((url) => ({ url, status: 'pending', blog_id: 'x', score: null, level: null, reasons: [] }));
+    const scores = vi.fn(async (urls: string[]) => pending(urls) as ScoreResult[]);
+    const scanner = new Scanner(document, { scores, feedback: vi.fn(), pollIntervalMs: 10, maxPolls: 3 });
+
+    await scanner.scan();
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(scores).toHaveBeenCalledTimes(3);
+    expect([...document.querySelectorAll(BADGE_TAG)].map(chipText)).toEqual(['분석 실패', '분석 실패']);
+  });
+
+  it('does not add duplicate badges on rescan and picks up new results', async () => {
+    const scores = vi.fn(async (urls: string[]) => urls.map((u) => ready(u, 'b', 10, 'low')));
+    const scanner = new Scanner(document, { scores, feedback: vi.fn() });
+
+    await scanner.scan();
+    await scanner.scan();
+    expect(document.querySelectorAll(BADGE_TAG)).toHaveLength(2);
+
+    document.querySelector('ul')!.insertAdjacentHTML(
+      'beforeend',
+      '<li><a href="https://blog.naver.com/new_one/300">무한 스크롤로 추가된 결과</a></li>',
+    );
+    await scanner.scan();
+    expect(document.querySelectorAll(BADGE_TAG)).toHaveLength(3);
+    expect(scores).toHaveBeenLastCalledWith(['https://blog.naver.com/new_one/300']);
+  });
+
+  it('shows an error badge when the server is unreachable', async () => {
+    const scanner = new Scanner(document, { scores: vi.fn().mockRejectedValue(new Error('down')), feedback: vi.fn() });
+    await scanner.scan();
+    expect([...document.querySelectorAll(BADGE_TAG)].map(chipText)).toEqual(['분석 실패', '분석 실패']);
+  });
+
+  it('opens reasons on click without following the result link, and sends feedback', async () => {
+    const feedback = vi.fn().mockResolvedValue(undefined);
+    const scores = vi.fn(async (urls: string[]) => urls.map((u) => ready(u, 'b', 94, 'high')));
+    const scanner = new Scanner(document, { scores, feedback });
+    await scanner.scan();
+
+    const host = document.querySelector(BADGE_TAG)!;
+    const root = host.shadowRoot!;
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true, composed: true });
+    root.querySelector<HTMLButtonElement>('.chip')!.dispatchEvent(click);
+
+    expect(click.defaultPrevented).toBe(true);
+    expect(root.querySelector<HTMLElement>('.panel')!.hidden).toBe(false);
+    expect(root.querySelector('.panel li')!.textContent).toBe('근거');
+
+    root.querySelector<HTMLButtonElement>('button[data-label="ok"]')!.click();
+    await vi.waitFor(() => expect(root.querySelector('.thanks')).not.toBeNull());
+    expect(feedback).toHaveBeenCalledWith('https://blog.naver.com/info_bot/100', 'ok');
+  });
+
+  it('escapes reasons from the server', async () => {
+    const scores = vi.fn(async (urls: string[]) =>
+      urls.map((u) => ({ ...ready(u, 'b', 94, 'high'), reasons: ['<img src=x onerror=alert(1)>'] })),
+    );
+    await new Scanner(document, { scores, feedback: vi.fn() }).scan();
+    const panel = document.querySelector(BADGE_TAG)!.shadowRoot!.querySelector('.panel')!;
+    expect(panel.querySelector('img')).toBeNull();
+    expect(panel.querySelector('li')!.textContent).toBe('<img src=x onerror=alert(1)>');
+  });
+});

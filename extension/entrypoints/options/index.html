@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>양산형 블로그 필터 설정</title>
+    <meta name="manifest.open_in_tab" content="true" />
+    <style>
+      body { font: 14px/1.5 -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; max-width: 480px; margin: 32px auto; color: #222; }
+      label { display: block; font-weight: 600; margin-bottom: 6px; }
+      input { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font: inherit; }
+      .row { display: flex; gap: 8px; margin-top: 12px; }
+      button { padding: 6px 14px; border: 1px solid #ccc; border-radius: 6px; background: #f6f7f8; cursor: pointer; font: inherit; }
+      #status { margin-top: 12px; color: #555; min-height: 1.5em; }
+    </style>
+  </head>
+  <body>
+    <h1>설정</h1>
+    <form id="form">
+      <label for="apiBase">분석 서버 주소</label>
+      <input id="apiBase" type="url" required placeholder="http://127.0.0.1:8000" />
+      <div class="row">
+        <button type="submit">저장</button>
+        <button type="button" id="test">연결 확인</button>
+      </div>
+    </form>
+    <div id="status" role="status"></div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
