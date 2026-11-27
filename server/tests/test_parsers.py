@@ -60,3 +60,26 @@ def test_legacy_editor_post():
 def test_post_without_body_raises():
     with pytest.raises(ParseError):
         parse_post("<html><body><p>로그인이 필요합니다</p></body></html>")
+
+
+def test_real_markup_structure():
+    """2026-11 실제 페이지에서 확인한 마크업 패턴."""
+    post = parse_post(fixture("post_real_structure.html"))
+
+    assert post.title == "테스트용 제목"
+    assert post.paragraphs == [
+        "첫 번째 문단입니다.",
+        "자세한 내용은 여기를 참고하세요.",
+        "인용문 텍스트",
+        "표 셀 A",
+        "표 셀 B",
+    ]
+    # 텍스트 링크 + 이미지에 건 링크(data-linkdata). 링크 없는 이미지와 '#'은 제외
+    assert post.links == ["https://example.com/profile", "https://link.coupang.com/a/xyz789"]
+    assert len(post.image_urls) == 2
+
+
+def test_image_link_affiliate_is_detected():
+    from app.signals import is_affiliate
+
+    assert is_affiliate(parse_post(fixture("post_real_structure.html")))

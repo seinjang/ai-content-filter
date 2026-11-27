@@ -4,6 +4,7 @@
 - 글: https://m.blog.naver.com/{blogId}/{logNo} (스마트에디터 ONE 구조, 구 에디터는 #postViewArea)
 """
 
+import json
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -15,10 +16,13 @@ from selectolax.lexbor import LexborHTMLParser as HTMLParser
 from app.naver import parse_blog_post_url
 
 _WS = re.compile(r"\s+")
+# 스마트에디터는 빈 줄을 제로폭 공백(\u200b)으로 채운다.
+_INVISIBLE = re.compile(r"[\u200b\u200c\u200d\ufeff]")
+BODY_COMPONENTS = ("se-text", "se-quotation", "se-table")
 
 
 def _clean(text: str | None) -> str:
-    return _WS.sub(" ", text or "").strip()
+    return _WS.sub(" ", _INVISIBLE.sub("", text or "")).strip()
 
 
 @dataclass(frozen=True)
@@ -105,7 +109,7 @@ def _parse_smart_editor(tree: HTMLParser, container) -> PostContent:
         texts = [t for t in texts if t]
         if "se-sectionTitle" in classes:
             headings.extend(texts)
-        elif "se-text" in classes or "se-quotation" in classes:
+        elif any(c in classes for c in BODY_COMPONENTS):
             paragraphs.extend(texts)
     return PostContent(
         title=_clean(title_node.text()) if title_node else "",
@@ -138,4 +142,18 @@ def _images(node) -> list[str]:
 
 
 def _links(node) -> list[str]:
-    return [href for a in node.css("a[href]") if (href := a.attributes.get("href"))]
+    """본문 링크. 이미지에 건 링크는 href가 '#'이고 실제 주소는 data-linkdata JSON에 있다."""
+    links = []
+    for a in node.css("a"):
+        href = a.attributes.get("href") or ""
+        if href.startswith(("http://", "https://")):
+            links.append(href)
+            continue
+        try:
+            data = json.loads(a.attributes.get("data-linkdata") or "{}")
+        except ValueError:
+            continue
+        link = data.get("link") if isinstance(data, dict) else None
+        if isinstance(link, str) and link.startswith(("http://", "https://")):
+            links.append(link)
+    return links
