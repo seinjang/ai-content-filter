@@ -12,6 +12,44 @@ ai-content-filter/
 └─ infra/       Docker Compose, 배포 설정
 ```
 
+## 로컬 실행
+
+### Docker (권장)
+
+[Docker Desktop](https://www.docker.com/products/docker-desktop/) 설치 후:
+
+```bash
+cd infra
+docker compose up --build
+```
+
+- API 문서: http://localhost:8000/docs
+- 헬스체크: http://localhost:8000/healthz
+
+DB 마이그레이션은 `migrate` 서비스가 API보다 먼저 자동으로 실행합니다.
+
+### 서버만 직접 실행 (개발용)
+
+[uv](https://docs.astral.sh/uv/) 필요. PostgreSQL과 Redis는 위 compose로 띄워 두고:
+
+```bash
+cd server
+uv sync
+uv run alembic upgrade head
+uv run uvicorn app.main:app --reload
+```
+
+설정은 환경변수(`ACF_DATABASE_URL`, `ACF_REDIS_URL`) 또는 `server/.env`로 바꿀 수 있습니다.
+
+### 테스트
+
+실제 PostgreSQL(`acf_test` DB)과 Redis(DB 15)를 사용합니다.
+
+```bash
+cd server
+uv run pytest
+```
+
 ## 단계별 로드맵
 
 1. **MVP** — 네이버 검색 결과에 블로그별 양산형 의심도 배지 (규칙 기반 + 캐싱) ← 진행 중
