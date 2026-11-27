@@ -99,6 +99,14 @@ def test_personal_blog_scores_low():
     assert reasons == ["직접 경험을 담은 표현이 자주 등장 (감점 요인)"]
 
 
+def test_low_score_hides_risk_reasons():
+    # 실제 공식 블로그 사례: 주제는 넓지만 경험 글이 많아 점수 0
+    signals = {"category_entropy": 2.57, "personal_marker_ratio": 0.8}
+    score, reasons = score_blog(signals)
+    assert score == 0
+    assert reasons == ["직접 경험을 담은 표현이 자주 등장 (감점 요인)"]
+
+
 def test_score_is_bounded_and_handles_missing_signals():
     assert score_blog({}) == (0, [])
     maxed = {

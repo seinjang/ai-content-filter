@@ -64,10 +64,11 @@ def score_blog(signals: dict) -> tuple[int, list[str]]:
     total = sum(c for c, *_ in contributions) - PERSONAL_DISCOUNT * personal
     score = round(max(0.0, min(1.0, total)) * 100)
 
+    # low 판정에 위험 근거를 붙이면 초록 배지와 어긋나므로 medium 이상에서만 보여준다.
     reasons = [
         rule.reason(value)
         for _, risk, rule, value in sorted(contributions, key=lambda c: c[0], reverse=True)
-        if risk >= REASON_THRESHOLD
+        if risk >= REASON_THRESHOLD and level_for(score) != "low"
     ]
     if personal >= REASON_THRESHOLD:
         reasons.append("직접 경험을 담은 표현이 자주 등장 (감점 요인)")
