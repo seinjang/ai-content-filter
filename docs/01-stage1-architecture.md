@@ -109,15 +109,19 @@ feedback(id, target_type, target_id, user_hash, label['spam'|'ok'], created_at)
 ```
 POST /v1/scores:batch
   req:  { "items": [{ "url": "https://blog.naver.com/abc/2234..." }, ...] }
-  res:  { "results": [{ "url": "...", "status": "ready|pending|error",
-                        "score": 72, "level": "high",
+  res:  { "results": [{ "url": "...", "status": "ready|pending|invalid",
+                        "blog_id": "abc", "score": 72, "level": "high",
                         "reasons": ["최근 30일 하루 평균 6.2개 포스팅", "제휴 링크 비율 80%"] }] }
 
 POST /v1/feedback
-  req:  { "url": "...", "label": "ok" }
+  req:  { "url": "...", "label": "spam|ok", "client_id": "확장 설치 ID (선택, 서버에는 해시만 저장)" }
 
 GET  /healthz, /metrics
 ```
+
+- 한 요청에 최대 30개. 네이버 블로그 글 URL이 아닌 항목은 `invalid`로 응답하고 나머지는 정상 처리한다.
+- 점수는 블로그 단위로 Redis에 캐시한다 (`score:blog:{blogId}`). 캐시에 없는 블로그는 `crawl:requested` 집합에 넣고 `pending`으로 응답하며, 2주차 워커가 이 집합을 처리한다.
+- level 기준: 0~39 low, 40~69 medium, 70~100 high
 
 ---
 
