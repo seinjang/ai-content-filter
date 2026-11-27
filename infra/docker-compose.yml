@@ -39,5 +39,13 @@ services:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
 
+  worker:
+    build: ../server
+    command: ["celery", "-A", "app.worker", "worker", "-Q", "analyze", "--concurrency=2", "--loglevel=info"]
+    environment: *server-env
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
 volumes:
   pgdata:

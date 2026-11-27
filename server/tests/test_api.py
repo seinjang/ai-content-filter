@@ -1,13 +1,27 @@
 import json
 
+import pytest
 from sqlalchemy import select
 
+from app.cache import LOCK_KEY, SCORE_KEY
 from app.db import Blog, Feedback
-from app.main import CRAWL_REQUESTED_KEY, SCORE_KEY
+from app.main import app, get_enqueue
 
 POST_A1 = "https://blog.naver.com/blog_a/100"
 POST_A2 = "https://m.blog.naver.com/blog_a/200"
 POST_B = "https://blog.naver.com/blog_b/300"
+
+
+@pytest.fixture
+def enqueued(client):
+    calls: list[list[str]] = []
+
+    async def fake_enqueue(blog_ids):
+        calls.append(blog_ids)
+
+    app.dependency_overrides[get_enqueue] = lambda: fake_enqueue
+    yield calls
+    app.dependency_overrides.clear()
 
 
 async def test_healthz(client):
@@ -16,7 +30,7 @@ async def test_healthz(client):
     assert res.json() == {"status": "ok", "db": "ok", "redis": "ok"}
 
 
-async def test_uncached_blog_is_pending_and_requested(client, redis):
+async def test_uncached_blog_is_pending_and_enqueued_once(client, redis, enqueued):
     res = await client.post("/v1/scores:batch", json={"items": [{"url": POST_A1}]})
 
     assert res.status_code == 200
@@ -30,11 +44,17 @@ async def test_uncached_blog_is_pending_and_requested(client, redis):
             "reasons": [],
         }
     ]
-    assert await redis.smembers(CRAWL_REQUESTED_KEY) == {"blog_a"}
+    assert enqueued == [["blog_a"]]
+    assert await redis.exists(LOCK_KEY.format("blog_a"))
+
+    # 분석이 끝나기 전에 다시 요청해도 중복 등록하지 않음
+    await client.post("/v1/scores:batch", json={"items": [{"url": POST_A2}]})
+    assert enqueued == [["blog_a"]]
 
 
-async def test_cached_blog_is_ready_for_every_post(client, redis):
-    await redis.set(SCORE_KEY.format("blog_a"), json.dumps({"score": 82, "reasons": ["r1"]}))
+async def test_cached_blog_is_ready_for_every_post(client, redis, enqueued):
+    cached = {"status": "ready", "score": 82, "reasons": ["r1"]}
+    await redis.set(SCORE_KEY.format("blog_a"), json.dumps(cached))
 
     res = await client.post(
         "/v1/scores:batch",
@@ -46,10 +66,19 @@ async def test_cached_blog_is_ready_for_every_post(client, redis):
     assert results[0]["score"] == 82
     assert results[0]["level"] == "high"
     assert results[1]["reasons"] == ["r1"]
-    assert await redis.smembers(CRAWL_REQUESTED_KEY) == {"blog_b"}
+    assert enqueued == [["blog_b"]]
 
 
-async def test_invalid_url_does_not_break_batch(client):
+async def test_unavailable_blog(client, redis, enqueued):
+    await redis.set(SCORE_KEY.format("blog_a"), json.dumps({"status": "unavailable"}))
+
+    res = await client.post("/v1/scores:batch", json={"items": [{"url": POST_A1}]})
+
+    assert res.json()["results"][0]["status"] == "unavailable"
+    assert enqueued == []
+
+
+async def test_invalid_url_does_not_break_batch(client, enqueued):
     res = await client.post(
         "/v1/scores:batch", json={"items": [{"url": "https://example.com/x"}, {"url": POST_B}]}
     )
@@ -57,7 +86,7 @@ async def test_invalid_url_does_not_break_batch(client):
     assert [r["status"] for r in res.json()["results"]] == ["invalid", "pending"]
 
 
-async def test_batch_size_is_limited(client):
+async def test_batch_size_is_limited(client, enqueued):
     items = [{"url": POST_A1}] * 31
     assert (await client.post("/v1/scores:batch", json={"items": items})).status_code == 422
     assert (await client.post("/v1/scores:batch", json={"items": []})).status_code == 422

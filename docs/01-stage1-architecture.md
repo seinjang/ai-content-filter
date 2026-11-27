@@ -11,32 +11,65 @@
 
 ## 전체 구조
 
-```
-[Chrome Extension]
-  content script (search.naver.com)
-    └─ 결과 DOM에서 blog URL 추출 → blogId/logNo 파싱
-  service worker
-    └─ API 호출, chrome.storage 로컬 캐시(TTL)
-          │  POST /v1/scores:batch
-          ▼
-[API Server: FastAPI]
-    ├─ Redis 캐시 조회 → 있으면 즉시 반환 (status: ready)
-    └─ 없으면 작업 큐에 등록 → status: pending 반환
-          │
-          ▼
-[Redis]  캐시 + 브로커
-          │
-          ▼
-[Worker: Celery]
-    ├─ Crawler: 모바일 블로그 페이지 / 블로그 RSS 수집 (도메인별 rate limit)
-    ├─ Signal Extractor: 신호 계산
-    └─ Scorer (rule v1): 0~100 점수 + 근거
-          │
-          ▼
-[PostgreSQL]  blogs, posts, signals(JSONB), scores, feedback
+```mermaid
+flowchart TB
+    subgraph Browser["사용자 브라우저"]
+        CS["Content Script<br/>search.naver.com 결과에서 블로그 링크 추출"]
+        SW["Service Worker<br/>API 호출, 로컬 캐시"]
+        CS --> SW
+    end
+
+    subgraph Server["서버"]
+        API["API 서버<br/>FastAPI"]
+        R[("Redis<br/>점수 캐시 + 작업 큐")]
+        W["Worker<br/>Celery"]
+        DB[("PostgreSQL<br/>blogs, posts, signals, scores, feedback")]
+    end
+
+    Naver["네이버 블로그<br/>RSS, 모바일 글 페이지"]
+
+    SW -- "POST /v1/scores:batch" --> API
+    API -- "캐시 조회, 분석 등록" --> R
+    R -- "분석 태스크" --> W
+    W -- "수집" --> Naver
+    W -- "신호, 점수 저장" --> DB
+    W -- "점수 캐시" --> R
+    API -- "피드백 저장" --> DB
 ```
 
+| 구성 요소 | 역할 |
+|---|---|
+| Content Script | 검색 결과 DOM에서 블로그 글 링크를 찾고 배지를 그린다 |
+| Service Worker | 서버 API 호출, 확장 로컬 캐시, `pending` 재조회 |
+| API 서버 | 캐시된 점수를 즉시 응답하고, 없는 블로그는 분석을 등록한다 |
+| Redis | 블로그 점수 캐시, 중복 분석 방지 락, Celery 브로커 |
+| Worker | 수집 → 신호 추출 → 점수 계산 → 저장 |
+| PostgreSQL | 신호 원본과 점수 이력, 사용자 피드백 (이후 ML 학습 데이터) |
+
 ### 요청 흐름
+
+```mermaid
+sequenceDiagram
+    participant E as 확장
+    participant A as API
+    participant R as Redis
+    participant W as Worker
+
+    E->>A: POST /v1/scores:batch
+    A->>R: 점수 캐시 조회
+    alt 캐시 있음
+        A-->>E: ready (점수, 근거)
+    else 캐시 없음
+        A->>R: 락 획득 후 분석 태스크 등록
+        A-->>E: pending
+        W->>R: 태스크 수신
+        W->>W: 수집, 신호 추출, 점수 계산
+        W->>R: 점수 캐시 저장
+        E->>A: 2~3초 후 재조회
+        A-->>E: ready
+    end
+```
+
 1. 검색 결과 로드 → content script가 결과 항목의 블로그 링크를 수집 (최대 10~30개)
 2. service worker가 로컬 캐시를 확인하고, 없는 것만 묶어 배치 요청
 3. 서버: 캐시 히트는 즉시 `ready`, 미스는 큐에 넣고 `pending`
@@ -133,6 +166,14 @@ GET  /healthz, /metrics
 ---
 
 ## 작업 순서 (약 3~4주)
+
+| 주차 | 내용 | 상세 문서 | 상태 |
+|---|---|---|---|
+| 1주차 | 서버 뼈대, DB 스키마, Docker Compose, CI | [02](02-week1-server-skeleton.md) | 완료 |
+| 2주차 | 크롤러, 신호 추출, rule v1 스코어러, Celery 워커 | [03](03-week2-worker-pipeline.md) | 진행 중 |
+| 3주차 | 크롬 확장, 배지 UI, API 연동 | - | 예정 |
+| 4주차 | 캐싱·rate limit 개선, 메트릭 대시보드, README | - | 예정 |
+
 1. **1주차:** 모노레포 세팅(`extension/`, `server/`, `infra/`), Docker Compose(Postgres, Redis), FastAPI 뼈대
 2. **2주차:** 크롤러 + 신호 추출 + rule v1 스코어러, HTML fixture 테스트
 3. **3주차:** 확장 content script + service worker + 배지 UI, 배치 API 연동
