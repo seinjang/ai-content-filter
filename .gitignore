@@ -13,3 +13,6 @@ dist/
 # IDE
 .vscode/
 .idea/
+
+# Local data
+dump.rdb
