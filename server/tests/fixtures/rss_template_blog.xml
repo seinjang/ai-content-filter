@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 네이버 블로그 RSS 구조를 본뜬 합성 fixture (양산형 블로그 예시: 3일간 30개, 주제 10개) -->
+<rss version="2.0">
+  <channel>
+    <title><![CDATA[꿀정보 총정리]]></title>
+    <link>https://blog.naver.com/info_bot</link>
+    <description><![CDATA[모든 정보를 정리합니다]]></description>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[가전]]></category>
+      <title><![CDATA[2025 무선청소기 추천 순위 TOP 7 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000030?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000030</guid>
+      <description><![CDATA[무선청소기 추천 순위]]></description>
+      <pubDate>Thu, 27 Nov 2025 23:00:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[건강]]></category>
+      <title><![CDATA[2025 유산균 추천 순위 TOP 5 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000029?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000029</guid>
+      <description><![CDATA[유산균 추천 순위]]></description>
+      <pubDate>Thu, 27 Nov 2025 20:36:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[금융]]></category>
+      <title><![CDATA[2025 청년도약계좌 신청 방법 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000028?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000028</guid>
+      <description><![CDATA[청년도약계좌 추천 순위]]></description>
+      <pubDate>Thu, 27 Nov 2025 18:12:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[여행]]></category>
+      <title><![CDATA[2025 제주도 렌트카 추천 순위 TOP 6 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000027?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000027</guid>
+      <description><![CDATA[제주도 렌트카 추천 순위]]></description>
+      <pubDate>Thu, 27 Nov 2025 15:48:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[육아]]></category>
+      <title><![CDATA[2025 아기 물티슈 추천 순위 TOP 5 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000026?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000026</guid>
+      <description><![CDATA[아기 물티슈 추천 순위]]></description>
+      <pubDate>Thu, 27 Nov 2025 13:24:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[자동차]]></category>
+      <title><![CDATA[2025 블랙박스 추천 순위 TOP 7 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000025?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000025</guid>
+      <description><![CDATA[블랙박스 추천 순위]]></description>
+      <pubDate>Thu, 27 Nov 2025 11:00:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[IT]]></category>
+      <title><![CDATA[2025 노트북 추천 순위 TOP 10 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000024?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000024</guid>
+      <description><![CDATA[노트북 추천 순위]]></description>
+      <pubDate>Thu, 27 Nov 2025 08:36:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[뼈건강]]></category>
+      <title><![CDATA[2025 칼슘 영양제 추천 순위 TOP 5 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000023?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000023</guid>
+      <description><![CDATA[칼슘 영양제 추천 순위]]></description>
+      <pubDate>Thu, 27 Nov 2025 06:12:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[뷰티]]></category>
+      <title><![CDATA[2025 선크림 추천 순위 TOP 8 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000022?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000022</guid>
+      <description><![CDATA[선크림 추천 순위]]></description>
+      <pubDate>Thu, 27 Nov 2025 03:48:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[반려동물]]></category>
+      <title><![CDATA[2025 강아지 사료 추천 순위 TOP 6 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000021?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000021</guid>
+      <description><![CDATA[강아지 사료 추천 순위]]></description>
+      <pubDate>Thu, 27 Nov 2025 01:24:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[가전]]></category>
+      <title><![CDATA[2025 무선청소기 추천 순위 TOP 7 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000020?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000020</guid>
+      <description><![CDATA[무선청소기 추천 순위]]></description>
+      <pubDate>Wed, 26 Nov 2025 23:00:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[건강]]></category>
+      <title><![CDATA[2025 유산균 추천 순위 TOP 5 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000019?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000019</guid>
+      <description><![CDATA[유산균 추천 순위]]></description>
+      <pubDate>Wed, 26 Nov 2025 20:36:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[금융]]></category>
+      <title><![CDATA[2025 청년도약계좌 신청 방법 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000018?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000018</guid>
+      <description><![CDATA[청년도약계좌 추천 순위]]></description>
+      <pubDate>Wed, 26 Nov 2025 18:12:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[여행]]></category>
+      <title><![CDATA[2025 제주도 렌트카 추천 순위 TOP 6 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000017?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000017</guid>
+      <description><![CDATA[제주도 렌트카 추천 순위]]></description>
+      <pubDate>Wed, 26 Nov 2025 15:48:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[육아]]></category>
+      <title><![CDATA[2025 아기 물티슈 추천 순위 TOP 5 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000016?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000016</guid>
+      <description><![CDATA[아기 물티슈 추천 순위]]></description>
+      <pubDate>Wed, 26 Nov 2025 13:24:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[자동차]]></category>
+      <title><![CDATA[2025 블랙박스 추천 순위 TOP 7 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000015?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000015</guid>
+      <description><![CDATA[블랙박스 추천 순위]]></description>
+      <pubDate>Wed, 26 Nov 2025 11:00:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[IT]]></category>
+      <title><![CDATA[2025 노트북 추천 순위 TOP 10 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000014?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000014</guid>
+      <description><![CDATA[노트북 추천 순위]]></description>
+      <pubDate>Wed, 26 Nov 2025 08:36:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[뼈건강]]></category>
+      <title><![CDATA[2025 칼슘 영양제 추천 순위 TOP 5 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000013?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000013</guid>
+      <description><![CDATA[칼슘 영양제 추천 순위]]></description>
+      <pubDate>Wed, 26 Nov 2025 06:12:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[뷰티]]></category>
+      <title><![CDATA[2025 선크림 추천 순위 TOP 8 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000012?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000012</guid>
+      <description><![CDATA[선크림 추천 순위]]></description>
+      <pubDate>Wed, 26 Nov 2025 03:48:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[반려동물]]></category>
+      <title><![CDATA[2025 강아지 사료 추천 순위 TOP 6 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000011?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000011</guid>
+      <description><![CDATA[강아지 사료 추천 순위]]></description>
+      <pubDate>Wed, 26 Nov 2025 01:24:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[가전]]></category>
+      <title><![CDATA[2025 무선청소기 추천 순위 TOP 7 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000010?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000010</guid>
+      <description><![CDATA[무선청소기 추천 순위]]></description>
+      <pubDate>Tue, 25 Nov 2025 23:00:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[건강]]></category>
+      <title><![CDATA[2025 유산균 추천 순위 TOP 5 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000009?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000009</guid>
+      <description><![CDATA[유산균 추천 순위]]></description>
+      <pubDate>Tue, 25 Nov 2025 20:36:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[금융]]></category>
+      <title><![CDATA[2025 청년도약계좌 신청 방법 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000008?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000008</guid>
+      <description><![CDATA[청년도약계좌 추천 순위]]></description>
+      <pubDate>Tue, 25 Nov 2025 18:12:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[여행]]></category>
+      <title><![CDATA[2025 제주도 렌트카 추천 순위 TOP 6 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000007?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000007</guid>
+      <description><![CDATA[제주도 렌트카 추천 순위]]></description>
+      <pubDate>Tue, 25 Nov 2025 15:48:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[육아]]></category>
+      <title><![CDATA[2025 아기 물티슈 추천 순위 TOP 5 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000006?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000006</guid>
+      <description><![CDATA[아기 물티슈 추천 순위]]></description>
+      <pubDate>Tue, 25 Nov 2025 13:24:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[자동차]]></category>
+      <title><![CDATA[2025 블랙박스 추천 순위 TOP 7 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000005?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000005</guid>
+      <description><![CDATA[블랙박스 추천 순위]]></description>
+      <pubDate>Tue, 25 Nov 2025 11:00:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[IT]]></category>
+      <title><![CDATA[2025 노트북 추천 순위 TOP 10 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000004?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000004</guid>
+      <description><![CDATA[노트북 추천 순위]]></description>
+      <pubDate>Tue, 25 Nov 2025 08:36:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[뼈건강]]></category>
+      <title><![CDATA[2025 칼슘 영양제 추천 순위 TOP 5 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000003?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000003</guid>
+      <description><![CDATA[칼슘 영양제 추천 순위]]></description>
+      <pubDate>Tue, 25 Nov 2025 06:12:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[뷰티]]></category>
+      <title><![CDATA[2025 선크림 추천 순위 TOP 8 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000002?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000002</guid>
+      <description><![CDATA[선크림 추천 순위]]></description>
+      <pubDate>Tue, 25 Nov 2025 03:48:00 +0900</pubDate>
+    </item>
+    <item>
+      <author>info_bot</author>
+      <category><![CDATA[반려동물]]></category>
+      <title><![CDATA[2025 강아지 사료 추천 순위 TOP 6 총정리]]></title>
+      <link><![CDATA[https://blog.naver.com/info_bot/223000000001?fromRss=true&trackingCode=rss]]></link>
+      <guid>https://blog.naver.com/info_bot/223000000001</guid>
+      <description><![CDATA[강아지 사료 추천 순위]]></description>
+      <pubDate>Tue, 25 Nov 2025 01:24:00 +0900</pubDate>
+    </item>
+    <item>
+      <title><![CDATA[링크가 깨진 항목]]></title>
+      <guid>https://example.com/not-a-post</guid>
+      <pubDate>Tue, 25 Nov 2025 10:00:00 +0900</pubDate>
+    </item>
+  </channel>
+</rss>

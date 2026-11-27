@@ -37,6 +37,9 @@ cd server
 uv sync
 uv run alembic upgrade head
 uv run uvicorn app.main:app --reload
+
+# 다른 터미널에서 분석 워커 실행
+uv run celery -A app.worker worker -Q analyze --loglevel=info
 ```
 
 설정은 환경변수(`ACF_DATABASE_URL`, `ACF_REDIS_URL`) 또는 `server/.env`로 바꿀 수 있습니다.
@@ -60,4 +63,7 @@ uv run pytest
 
 ## 문서
 
-- [1단계 아키텍처 & 기술 스택](docs/01-stage1-architecture.md)
+- [문서 목록](docs/README.md)
+- [01 1단계 아키텍처](docs/01-stage1-architecture.md)
+- [02 1주차: 서버 뼈대](docs/02-week1-server-skeleton.md)
+- [03 2주차: 워커 파이프라인](docs/03-week2-worker-pipeline.md)

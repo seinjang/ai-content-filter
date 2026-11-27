@@ -5,20 +5,18 @@ from contextlib import asynccontextmanager
 from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 from redis.asyncio import Redis
 from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from app.cache import LOCK_KEY, LOCK_TTL_SEC, SCORE_KEY
 from app.config import settings
 from app.db import Blog, Feedback
 from app.naver import parse_blog_post_url
-
-# 점수는 블로그 단위로 캐시한다. 값: {"score": int, "reasons": [str]}
-SCORE_KEY = "score:blog:{}"
-# 분석 요청된 블로그 ID. 2주차 워커(Celery)가 이 집합을 소비한다.
-CRAWL_REQUESTED_KEY = "crawl:requested"
+from app.scorer import level_for
 
 
 @asynccontextmanager
@@ -43,16 +41,24 @@ def get_redis(request: Request) -> Redis:
     return request.app.state.redis
 
 
+async def _enqueue_with_celery(blog_ids: list[str]) -> None:
+    from app.worker import analyze_blog_task
+
+    def send() -> None:
+        for blog_id in blog_ids:
+            analyze_blog_task.delay(blog_id)
+
+    await run_in_threadpool(send)
+
+
+def get_enqueue():
+    """분석 태스크 등록 함수. 테스트에서는 이 의존성을 바꿔 끼운다."""
+    return _enqueue_with_celery
+
+
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 RedisDep = Annotated[Redis, Depends(get_redis)]
-
-
-def level_for(score: int) -> Literal["low", "medium", "high"]:
-    if score < 40:
-        return "low"
-    if score < 70:
-        return "medium"
-    return "high"
+EnqueueDep = Annotated[object, Depends(get_enqueue)]
 
 
 # --- health ---------------------------------------------------------------
@@ -91,7 +97,7 @@ class ScoreBatchRequest(BaseModel):
 
 class ScoreResult(BaseModel):
     url: str
-    status: Literal["ready", "pending", "invalid"]
+    status: Literal["ready", "pending", "invalid", "unavailable"]
     blog_id: str | None = None
     score: int | None = None
     level: Literal["low", "medium", "high"] | None = None
@@ -103,7 +109,9 @@ class ScoreBatchResponse(BaseModel):
 
 
 @app.post("/v1/scores:batch")
-async def score_batch(body: ScoreBatchRequest, redis: RedisDep) -> ScoreBatchResponse:
+async def score_batch(
+    body: ScoreBatchRequest, redis: RedisDep, enqueue: EnqueueDep
+) -> ScoreBatchResponse:
     refs = [parse_blog_post_url(item.url) for item in body.items]
     blog_ids = sorted({ref.blog_id for ref in refs if ref})
 
@@ -111,15 +119,24 @@ async def score_batch(body: ScoreBatchRequest, redis: RedisDep) -> ScoreBatchRes
     if blog_ids:
         values = await redis.mget([SCORE_KEY.format(b) for b in blog_ids])
         cached = {b: json.loads(v) for b, v in zip(blog_ids, values, strict=True) if v}
-        missing = [b for b in blog_ids if b not in cached]
-        if missing:
-            await redis.sadd(CRAWL_REQUESTED_KEY, *missing)
+        # 락을 잡은 블로그만 등록해서, 여러 사용자가 동시에 검색해도 분석은 한 번만 돈다.
+        to_enqueue = [
+            b
+            for b in blog_ids
+            if b not in cached
+            and await redis.set(LOCK_KEY.format(b), "1", nx=True, ex=LOCK_TTL_SEC)
+        ]
+        if to_enqueue:
+            await enqueue(to_enqueue)
 
     results = []
     for item, ref in zip(body.items, refs, strict=True):
+        hit = cached.get(ref.blog_id) if ref else None
         if ref is None:
             results.append(ScoreResult(url=item.url, status="invalid"))
-        elif hit := cached.get(ref.blog_id):
+        elif hit and hit.get("status") == "unavailable":
+            results.append(ScoreResult(url=item.url, status="unavailable", blog_id=ref.blog_id))
+        elif hit:
             results.append(
                 ScoreResult(
                     url=item.url,
