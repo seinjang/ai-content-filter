@@ -6,6 +6,7 @@ from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.concurrency import run_in_threadpool
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from redis.asyncio import Redis
 from sqlalchemy import select, text
@@ -32,6 +33,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="ai-content-filter", version="0.1.0", lifespan=lifespan)
+# Chrome에서 확장의 사이트 접근을 제한하면 host_permissions 예외가 빠져 CORS preflight가 생긴다.
+# 확장 출처만 허용하고 웹페이지 출처는 계속 막는다.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origin_regex=r"chrome-extension://[a-p]{32}",
+    allow_methods=["GET", "POST"],
+    allow_headers=["content-type"],
+)
 
 
 async def get_session(request: Request) -> AsyncIterator[AsyncSession]:

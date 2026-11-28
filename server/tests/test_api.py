@@ -197,3 +197,22 @@ async def test_article_body_limits_size(client):
     body = {"url": CAFE, "title": "t", "paragraphs": ["x" * 5001]}
     res = await client.post("/v1/articles:score", json=body)
     assert res.status_code == 422
+
+
+@pytest.mark.parametrize(
+    ("origin", "allowed"),
+    [
+        ("chrome-extension://impdlkelbgdpjcbfhjobeanbdpeabdeo", True),
+        ("https://evil.example", False),
+    ],
+)
+async def test_cors_preflight_allows_only_extension_origin(client, origin, allowed):
+    res = await client.options(
+        "/v1/snippets:score",
+        headers={
+            "Origin": origin,
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    assert (res.headers.get("access-control-allow-origin") == origin) is allowed

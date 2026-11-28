@@ -137,6 +137,8 @@ stateDiagram-v2
 | content script: `search.naver.com`, `m.search.naver.com` | 배지를 붙일 페이지 |
 | content script: `cafe.naver.com` (모든 프레임) | 사용자가 연 카페 글을 본문으로 판정 ([05](05-cafe-snippet.md)) |
 
+사용자가 Chrome에서 확장의 사이트 접근을 제한하면 `host_permissions` 예외가 빠져 서버 요청에 CORS preflight가 생긴다. 그래서 서버는 `chrome-extension://` 출처만 CORS로 허용한다 (웹페이지 출처는 차단).
+
 방문 기록, 탭 목록 같은 권한은 쓰지 않는다. 서버로 가는 정보는 검색 결과의 블로그 글 URL, 카페 글의 검색 결과 제목·요약문, 사용자가 연 카페 글의 본문, 피드백 시 익명 설치 ID(서버에는 해시만 저장)다. 카페 글 문구와 본문은 서버에 저장하지 않는다.
 
 ---
