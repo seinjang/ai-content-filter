@@ -112,7 +112,8 @@ def extract_snippet_signals(title: str, snippet: str) -> dict:
         "hashtag_count": len(_HASHTAG.findall(snippet)),
         "sponsored": float(any(p in text for p in SPONSORED_PHRASES)),
         "template_title": float(bool(TEMPLATE_TITLE.search(title))),
-        "keyword_density": round(_keyword_density(title, snippet), 3),
+        # 해시태그는 hashtag_count로 따로 세므로 키워드 반복에서는 뺀다 (이중 계산 방지).
+        "keyword_density": round(_keyword_density(title, _HASHTAG.sub(" ", snippet)), 3),
         "personal_marker_ratio": float(bool(PERSONAL_MARKERS.search(text))),
     }
 
@@ -123,7 +124,7 @@ def extract_article_signals(post: PostContent) -> dict:
         "hashtag_count": len(_HASHTAG.findall(post.text)),
         "sponsored": float(is_affiliate(post) or any(p in post.text for p in SPONSORED_PHRASES)),
         "template_heading_score": round(template_heading_score(post), 3),
-        "keyword_density": round(keyword_density(post), 3),
+        "keyword_density": round(_keyword_density(post.title, _HASHTAG.sub(" ", post.text)), 3),
         "personal_marker_ratio": float(has_personal_markers(post)),
     }
 

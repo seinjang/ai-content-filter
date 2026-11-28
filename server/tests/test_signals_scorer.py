@@ -6,6 +6,7 @@ from app.parsers import FeedPost, PostContent, parse_feed, parse_post
 from app.scorer import level_for, score_blog, score_snippet
 from app.signals import (
     category_entropy,
+    extract_article_signals,
     extract_blog_signals,
     extract_snippet_signals,
     is_affiliate,
@@ -148,3 +149,15 @@ def test_personal_snippet_scores_low():
     score, reasons = score_snippet(signals)
     assert level_for(score) == "low"
     assert reasons == ["직접 경험을 담은 표현이 자주 등장 (감점 요인)"]
+
+
+def test_hashtags_are_not_double_counted_as_keyword_repetition():
+    title = "용인 맛집 추천"
+    tags = "#용인맛집 #용인 #맛집 #용인맛집추천 #처인구맛집 #용인중앙시장 #맛집추천"
+    snippet = extract_snippet_signals(title, f"순대국이 진했어요 {tags}")
+    assert snippet["hashtag_count"] == 7
+    assert snippet["keyword_density"] == 0.0
+    post = PostContent(title=title, paragraphs=["순대국이 진했어요", tags])
+    article = extract_article_signals(post)
+    assert article["hashtag_count"] == 7
+    assert article["keyword_density"] == 0.0
