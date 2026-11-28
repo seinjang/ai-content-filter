@@ -127,7 +127,12 @@ async def score_batch(
             and await redis.set(LOCK_KEY.format(b), "1", nx=True, ex=LOCK_TTL_SEC)
         ]
         if to_enqueue:
-            await enqueue(to_enqueue)
+            try:
+                await enqueue(to_enqueue)
+            except Exception:
+                # 등록에 실패한 락이 남으면 TTL 동안 계속 pending으로만 보인다.
+                await redis.delete(*(LOCK_KEY.format(b) for b in to_enqueue))
+                raise
 
     results = []
     for item, ref in zip(body.items, refs, strict=True):
