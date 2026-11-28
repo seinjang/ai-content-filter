@@ -39,7 +39,8 @@ const STYLE = `
 .panel { font-weight: 400; }
 .loading .dot { animation: pulse 1s infinite alternate; }
 @keyframes pulse { from { opacity: .3 } to { opacity: 1 } }
-.panel { position: absolute; z-index: 2147483647; top: calc(100% + 6px); left: 0; width: 260px; padding: 10px 12px;
+.panel { position: fixed; inset: auto; margin: 0; z-index: 2147483647; width: 260px; padding: 10px 12px;
+  max-height: calc(100vh - 16px); overflow: auto; box-sizing: border-box;
   border: 1px solid #d0d4da; border-radius: 8px; background: #fff; box-shadow: 0 4px 16px rgba(0,0,0,.12); color: #222; }
 .panel[hidden] { display: none; }
 .score { font-weight: 600; margin-bottom: 6px; }
@@ -76,7 +77,7 @@ export function createBadge(doc: Document, onFeedback: (label: FeedbackLabel) =>
   const root = host.attachShadow({ mode: 'open' });
   root.innerHTML = `<style>${STYLE}</style>
     <button class="chip loading" type="button" aria-expanded="false"><span class="dot"></span><span class="label">분석 중</span></button>
-    <div class="panel" role="dialog" hidden></div>`;
+    <div class="panel" role="dialog" popover="manual" hidden></div>`;
 
   const chip = root.querySelector<HTMLButtonElement>('.chip')!;
   const label = root.querySelector<HTMLSpanElement>('.label')!;
@@ -89,10 +90,32 @@ export function createBadge(doc: Document, onFeedback: (label: FeedbackLabel) =>
     e.stopPropagation();
   });
   chip.addEventListener('click', () => {
-    if (state.kind !== 'ready') return;
-    panel.hidden = !panel.hidden;
-    chip.setAttribute('aria-expanded', String(!panel.hidden));
+    if (state.kind === 'ready') setOpen(panel.hidden);
   });
+
+  const view = doc.defaultView!;
+  // 패널 밖이 스크롤되면 배지와 어긋나므로 닫는다 (패널 자체 스크롤은 제외).
+  const closeOnScroll = (e: Event) => {
+    if (!e.composedPath().includes(panel)) setOpen(false);
+  };
+  function setOpen(open: boolean) {
+    panel.hidden = !open;
+    chip.setAttribute('aria-expanded', String(open));
+    if (typeof panel.showPopover !== 'function') return; // popover를 모르는 환경 (jsdom)
+    if (!open) {
+      if (panel.matches(':popover-open')) panel.hidePopover();
+      view.removeEventListener('scroll', closeOnScroll, true);
+      return;
+    }
+    // 검색 결과 카드의 overflow에 잘리지 않도록 최상위 레이어(popover)에 띄우고 배지 옆에 둔다.
+    panel.showPopover();
+    const r = chip.getBoundingClientRect();
+    const below = r.bottom + 6;
+    const fitsBelow = below + panel.offsetHeight <= view.innerHeight;
+    panel.style.top = `${fitsBelow ? below : Math.max(8, r.top - 6 - panel.offsetHeight)}px`;
+    panel.style.left = `${Math.max(8, Math.min(r.left, view.innerWidth - panel.offsetWidth - 8))}px`;
+    view.addEventListener('scroll', closeOnScroll, { capture: true, passive: true });
+  }
 
   function renderPanel(s: Extract<BadgeState, { kind: 'ready' }>) {
     const reasons = s.reasons.length
