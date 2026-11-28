@@ -13,6 +13,9 @@ const MIN_TITLE_LENGTH = 4;
 // 링크마다 들어 있는 스크린리더용 문구
 const NEW_WINDOW = /새 창 열림/g;
 const linkText = (a: Element) => (a.textContent ?? '').replace(NEW_WINDOW, '').trim();
+// 카페 글 카드의 댓글 미리보기: 본문 링크와 주소가 같고, 글 앞에 "RE"만 담은 요소가 붙는다.
+const isReplyPreview = (a: Element) =>
+  linkText(a).startsWith('RE') && [...a.querySelectorAll('*')].some((e) => !e.childElementCount && e.textContent?.trim() === 'RE');
 
 export interface ScannerDeps {
   scores(urls: string[]): Promise<ScoreResult[]>;
@@ -39,7 +42,7 @@ export function findTargets(root: ParentNode): Target[] {
     if (anchor.closest(BADGE_TAG)) continue;
     const blog = parseBlogPostUrl(anchor.href);
     const ref = blog ?? parseCafeArticleUrl(anchor.href);
-    if (!ref || linkText(anchor).length < MIN_TITLE_LENGTH) continue;
+    if (!ref || linkText(anchor).length < MIN_TITLE_LENGTH || isReplyPreview(anchor)) continue;
     const group = groups.get(ref.key) ?? { kind: blog ? 'blog' : 'cafe', anchors: [] };
     group.anchors.push(anchor);
     groups.set(ref.key, group);

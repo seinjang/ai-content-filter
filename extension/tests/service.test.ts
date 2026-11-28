@@ -119,3 +119,34 @@ describe('snippetScores', () => {
     expect(store.data).toEqual({});
   });
 });
+
+describe('cafe article (full body)', () => {
+  const CAFE = 'https://cafe.naver.com/zzop/4358587';
+  const article = { url: CAFE, title: 't', paragraphs: ['p'], headings: [], links: [] };
+  const full = { ...result(CAFE, '', 'ready', 82), blog_id: null, source: 'cafe' as const, basis: 'full' as const };
+
+  it('stores the full-body result in this browser and prefers it over the snippet on search pages', async () => {
+    const store = memoryStore();
+    const fetch = vi.fn(async (url: string, _init?: RequestInit) =>
+      url.endsWith('/v1/articles:score')
+        ? new Response(JSON.stringify(full))
+        : new Response(JSON.stringify({ results: [{ ...result('https://cafe.naver.com/other/1', '', 'ready', 10), basis: 'snippet' }] })),
+    );
+    const service = new ScoreService({ store, fetch: fetch as unknown as typeof globalThis.fetch, apiBase: async () => 'http://api' });
+
+    expect((await service.articleScore(article)).basis).toBe('full');
+    expect(Object.keys(store.data)).toEqual(['score:cafe:zzop/4358587']);
+
+    // 검색 결과의 주소는 ?art= 쿼리가 붙어 있다
+    const searchUrl = `${CAFE}?art=abc`;
+    const results = await service.snippetScores([
+      { url: searchUrl, title: 't', snippet: 's' },
+      { url: 'https://cafe.naver.com/other/1', title: 't', snippet: 's' },
+    ]);
+    expect(results.map((r) => [r.url, r.basis, r.score])).toEqual([
+      [searchUrl, 'full', 82],
+      ['https://cafe.naver.com/other/1', 'snippet', 10],
+    ]);
+    expect(JSON.parse(String(fetch.mock.calls.at(-1)![1]!.body)).items).toHaveLength(1);
+  });
+});

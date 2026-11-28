@@ -195,3 +195,19 @@ describe('cafe articles', () => {
     expect(root.querySelector('.basis')!.textContent).toBe('블로그 · 최근 글 분석');
   });
 });
+
+describe('cafe reply previews', () => {
+  it('ignores comment preview links when placing the badge', () => {
+    const CAFE = 'https://cafe.naver.com/somecafe/123?art=abc';
+    document.body.innerHTML = `<div>
+      <a href="${CAFE}">용인 유명맛집 미가훠궈</a>
+      <a href="${CAFE}">식당이 으리으리하네요 평일인데 만석</a>
+      <a href="${CAFE}"><div><p><i>RE</i>저도 용인으로 이사오고 처음 외식한 맛집 입니다 요즘도 자주가요 갈때마다</p></div></a>
+      <a href="${CAFE}">REVIEW 용인 맛집 지도 총정리 목록입니다 다녀온 곳 모두 정리했어요 아주 길게</a></div>`;
+    const [t] = findTargets(document);
+    // "RE" 요소가 따로 있는 댓글은 빼고, 'REVIEW'로 시작하는 일반 링크는 남긴다
+    expect(t!.anchor.textContent).toContain('REVIEW');
+    document.querySelectorAll('a')[3]!.remove();
+    expect(findTargets(document)[0]!.anchor.textContent).toBe('식당이 으리으리하네요 평일인데 만석');
+  });
+});

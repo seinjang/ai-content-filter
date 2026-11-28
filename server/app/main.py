@@ -6,6 +6,7 @@ from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.concurrency import run_in_threadpool
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from redis.asyncio import Redis
 from sqlalchemy import select, text
@@ -16,8 +17,9 @@ from app.cache import LOCK_KEY, LOCK_TTL_SEC, SCORE_KEY
 from app.config import settings
 from app.db import Blog, Feedback
 from app.naver import parse_blog_post_url, parse_cafe_article_url
-from app.scorer import level_for, score_snippet
-from app.signals import extract_snippet_signals
+from app.parsers import PostContent
+from app.scorer import level_for, score_article, score_snippet
+from app.signals import extract_article_signals, extract_snippet_signals
 
 
 @asynccontextmanager
@@ -31,6 +33,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="ai-content-filter", version="0.1.0", lifespan=lifespan)
+# Chrome에서 확장의 사이트 접근을 제한하면 host_permissions 예외가 빠져 CORS preflight가 생긴다.
+# 확장 출처만 허용하고 웹페이지 출처는 계속 막는다.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origin_regex=r"chrome-extension://[a-p]{32}",
+    allow_methods=["GET", "POST"],
+    allow_headers=["content-type"],
+)
 
 
 async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
@@ -197,6 +207,34 @@ async def score_snippets(body: SnippetScoreRequest) -> ScoreBatchResponse:
             )
         )
     return ScoreBatchResponse(results=results)
+
+
+class ArticleScoreRequest(BaseModel):
+    url: str = Field(max_length=2048)
+    title: str = Field(max_length=300)
+    paragraphs: list[Annotated[str, Field(max_length=5000)]] = Field(max_length=1000)
+    headings: list[Annotated[str, Field(max_length=300)]] = Field(default=[], max_length=200)
+    links: list[Annotated[str, Field(max_length=2048)]] = Field(default=[], max_length=500)
+
+
+@app.post("/v1/articles:score")
+async def score_article_body(body: ArticleScoreRequest) -> ScoreResult:
+    """사용자가 연 카페 글의 본문으로 판정한다. 본문도 클라이언트가 보내므로 저장하지 않는다."""
+    if parse_cafe_article_url(body.url) is None:
+        return ScoreResult(url=body.url, status="invalid", source="cafe", basis="full")
+    post = PostContent(
+        title=body.title, paragraphs=body.paragraphs, headings=body.headings, links=body.links
+    )
+    score, reasons = score_article(extract_article_signals(post))
+    return ScoreResult(
+        url=body.url,
+        status="ready",
+        score=score,
+        level=level_for(score),
+        reasons=reasons,
+        source="cafe",
+        basis="full",
+    )
 
 
 # --- feedback -------------------------------------------------------------

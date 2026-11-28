@@ -68,6 +68,23 @@ SNIPPET_RULES = [
 ]
 
 
+ARTICLE_SCORING_VERSION = "article-v1"
+ARTICLE_RULES = [
+    Rule("sponsored", 0.35, 0.0, 1.0, lambda v: "협찬·제휴 문구나 제휴 링크가 있음"),
+    Rule(
+        "template_heading_score", 0.25, 0.0, 1.0, lambda v: "목차·총정리·마무리 등 템플릿형 소제목"
+    ),
+    Rule(
+        "keyword_density", 0.20, 0.03, 0.10, lambda v: f"제목 키워드를 본문에 과하게 반복 ({v:.2f})"
+    ),
+    Rule("hashtag_count", 0.20, 3, 10, lambda v: f"해시태그를 많이 나열 ({v:.0f}개)"),
+]
+
+
+def score_article(signals: dict) -> tuple[int, list[str]]:
+    return score_blog(signals, ARTICLE_RULES)
+
+
 def score_snippet(signals: dict) -> tuple[int, list[str]]:
     return score_blog(signals, SNIPPET_RULES)
 
