@@ -3,10 +3,11 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from app.parsers import FeedPost, PostContent, parse_feed, parse_post
-from app.scorer import level_for, score_blog
+from app.scorer import level_for, score_blog, score_snippet
 from app.signals import (
     category_entropy,
     extract_blog_signals,
+    extract_snippet_signals,
     is_affiliate,
     keyword_density,
     posts_per_day,
@@ -125,3 +126,25 @@ def test_score_is_bounded_and_handles_missing_signals():
 )
 def test_level_boundaries(score, level):
     assert level_for(score) == level
+
+
+def test_snippet_signals_and_score():
+    signals = extract_snippet_signals(
+        "가성비 무선청소기 추천 순위 BEST 5",
+        "쿠팡 파트너스 활동의 일환으로 수수료를 제공받습니다 #청소기 #무선청소기 #가성비 #살림",
+    )
+    assert signals["hashtag_count"] == 4
+    assert signals["sponsored"] == 1.0
+    assert signals["template_title"] == 1.0
+    score, reasons = score_snippet(signals)
+    assert level_for(score) != "low"
+    assert reasons[0] == "협찬·제휴 문구가 보임"
+
+
+def test_personal_snippet_scores_low():
+    signals = extract_snippet_signals(
+        "용인 순대골목 다녀왔어요", "주말에 남편이랑 다녀왔는데 순대국이 진하고 좋았어요."
+    )
+    score, reasons = score_snippet(signals)
+    assert level_for(score) == "low"
+    assert reasons == ["직접 경험을 담은 표현이 자주 등장 (감점 요인)"]

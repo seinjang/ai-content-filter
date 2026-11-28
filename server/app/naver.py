@@ -1,4 +1,4 @@
-"""네이버 블로그 URL 파싱.
+"""네이버 블로그·카페 글 URL 파싱.
 
 지원 형식:
   https://blog.naver.com/{blogId}/{logNo}
@@ -43,3 +43,26 @@ def parse_blog_post_url(url: str) -> BlogPostRef | None:
     if not (_BLOG_ID.match(blog_id) and _LOG_NO.match(log_no)):
         return None
     return BlogPostRef(blog_id=blog_id, log_no=int(log_no))
+
+
+_CAFE_HOSTS = {"cafe.naver.com", "m.cafe.naver.com"}
+
+
+@dataclass(frozen=True)
+class CafeArticleRef:
+    cafe: str
+    article_id: int
+
+
+def parse_cafe_article_url(url: str) -> CafeArticleRef | None:
+    """https://cafe.naver.com/{cafe}/{articleId} (m. 포함, 검색 결과의 ?art= 쿼리는 무시)."""
+    try:
+        parts = urlsplit(url.strip())
+    except ValueError:
+        return None
+    if parts.scheme not in ("http", "https") or (parts.hostname or "").lower() not in _CAFE_HOSTS:
+        return None
+    segments = [s for s in parts.path.split("/") if s]
+    if len(segments) != 2 or not (_BLOG_ID.match(segments[0]) and _LOG_NO.match(segments[1])):
+        return None
+    return CafeArticleRef(cafe=segments[0], article_id=int(segments[1]))

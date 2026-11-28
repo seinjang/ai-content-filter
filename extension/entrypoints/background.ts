@@ -19,6 +19,12 @@ export default defineBackground(() => {
         .then((results): ScoresResponse => ({ ok: true, results }))
         .catch((e: unknown): ScoresResponse => ({ ok: false, error: String(e) }));
     }
+    if (msg.type === 'snippetScores') {
+      return service
+        .snippetScores(msg.items)
+        .then((results): ScoresResponse => ({ ok: true, results }))
+        .catch((e: unknown): ScoresResponse => ({ ok: false, error: String(e) }));
+    }
     if (msg.type === 'feedback') {
       return service
         .feedback(msg.url, msg.label)

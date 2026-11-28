@@ -4,7 +4,7 @@
  * chrome API에 직접 의존하지 않도록 저장소와 fetch를 주입받는다 (테스트용).
  */
 import { parseBlogPostUrl } from './naver';
-import type { FeedbackLabel, ScoreResult } from './types';
+import type { FeedbackLabel, ScoreResult, SnippetItem } from './types';
 
 export const READY_TTL_MS = 6 * 60 * 60 * 1000;
 export const UNAVAILABLE_TTL_MS = 60 * 60 * 1000;
@@ -69,6 +69,21 @@ export class ScoreService {
       const { expiresAt: _, ...rest } = hit as Cached;
       return { ...rest, url };
     });
+  }
+
+  /** 카페 글: 서버가 요청마다 계산하므로 캐시하지 않는다. */
+  async snippetScores(items: SnippetItem[]): Promise<ScoreResult[]> {
+    const results: ScoreResult[] = [];
+    for (let i = 0; i < items.length; i += MAX_BATCH) {
+      const res = await this.deps.fetch(`${await this.deps.apiBase()}/v1/snippets:score`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ items: items.slice(i, i + MAX_BATCH) }),
+      });
+      if (!res.ok) throw new Error(`snippets ${res.status}`);
+      results.push(...((await res.json()) as { results: ScoreResult[] }).results);
+    }
+    return results;
   }
 
   async feedback(url: string, label: FeedbackLabel): Promise<void> {

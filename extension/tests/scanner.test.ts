@@ -49,7 +49,7 @@ describe('Scanner', () => {
         { url: 'https://m.blog.naver.com/walker/200', status: 'pending', blog_id: 'walker', score: null, level: null, reasons: [] },
       ])
       .mockResolvedValueOnce([ready('https://m.blog.naver.com/walker/200', 'walker', 0, 'low')]);
-    const scanner = new Scanner(document, { scores, feedback: vi.fn(), pollIntervalMs: 1000 });
+    const scanner = new Scanner(document, { scores, feedback: vi.fn(), snippetScores: vi.fn(), pollIntervalMs: 1000 });
 
     await scanner.scan();
     const badges = [...document.querySelectorAll(BADGE_TAG)];
@@ -65,7 +65,7 @@ describe('Scanner', () => {
     const pending = (urls: string[]) =>
       urls.map((url) => ({ url, status: 'pending', blog_id: 'x', score: null, level: null, reasons: [] }));
     const scores = vi.fn(async (urls: string[]) => pending(urls) as ScoreResult[]);
-    const scanner = new Scanner(document, { scores, feedback: vi.fn(), pollIntervalMs: 10, maxPolls: 3 });
+    const scanner = new Scanner(document, { scores, feedback: vi.fn(), snippetScores: vi.fn(), pollIntervalMs: 10, maxPolls: 3 });
 
     await scanner.scan();
     await vi.advanceTimersByTimeAsync(100);
@@ -76,7 +76,7 @@ describe('Scanner', () => {
 
   it('does not add duplicate badges on rescan and picks up new results', async () => {
     const scores = vi.fn(async (urls: string[]) => urls.map((u) => ready(u, 'b', 10, 'low')));
-    const scanner = new Scanner(document, { scores, feedback: vi.fn() });
+    const scanner = new Scanner(document, { scores, feedback: vi.fn(), snippetScores: vi.fn() });
 
     await scanner.scan();
     await scanner.scan();
@@ -96,7 +96,7 @@ describe('Scanner', () => {
       <a href="https://blog.naver.com/info_bot/100">무선청소기 추천 TOP 7</a>
       <a href="https://blog.naver.com/info_bot/100">무선청소기를 고를 때 흡입력과 무게를 먼저 보세요…</a></div>`;
     const scores = vi.fn(async (urls: string[]) => urls.map((u) => ready(u, 'b', 10, 'low')));
-    await new Scanner(document, { scores, feedback: vi.fn() }).scan();
+    await new Scanner(document, { scores, feedback: vi.fn(), snippetScores: vi.fn() }).scan();
 
     const links = document.querySelectorAll('a');
     expect(links[1]!.previousElementSibling?.tagName.toLowerCase()).toBe(BADGE_TAG);
@@ -105,7 +105,7 @@ describe('Scanner', () => {
 
   it('re-adds a badge the page removed while re-rendering', async () => {
     const scores = vi.fn(async (urls: string[]) => urls.map((u) => ready(u, 'b', 10, 'low')));
-    const scanner = new Scanner(document, { scores, feedback: vi.fn() });
+    const scanner = new Scanner(document, { scores, feedback: vi.fn(), snippetScores: vi.fn() });
     await scanner.scan();
 
     document.querySelector(BADGE_TAG)!.remove();
@@ -116,7 +116,7 @@ describe('Scanner', () => {
   });
 
   it('shows an error badge when the server is unreachable', async () => {
-    const scanner = new Scanner(document, { scores: vi.fn().mockRejectedValue(new Error('down')), feedback: vi.fn() });
+    const scanner = new Scanner(document, { scores: vi.fn().mockRejectedValue(new Error('down')), feedback: vi.fn(), snippetScores: vi.fn() });
     await scanner.scan();
     expect([...document.querySelectorAll(BADGE_TAG)].map(chipText)).toEqual(['분석 실패', '분석 실패']);
   });
@@ -124,7 +124,7 @@ describe('Scanner', () => {
   it('opens reasons on click without following the result link, and sends feedback', async () => {
     const feedback = vi.fn().mockResolvedValue(undefined);
     const scores = vi.fn(async (urls: string[]) => urls.map((u) => ready(u, 'b', 94, 'high')));
-    const scanner = new Scanner(document, { scores, feedback });
+    const scanner = new Scanner(document, { scores, feedback, snippetScores: vi.fn() });
     await scanner.scan();
 
     const host = document.querySelector(BADGE_TAG)!;
@@ -145,9 +145,53 @@ describe('Scanner', () => {
     const scores = vi.fn(async (urls: string[]) =>
       urls.map((u) => ({ ...ready(u, 'b', 94, 'high'), reasons: ['<img src=x onerror=alert(1)>'] })),
     );
-    await new Scanner(document, { scores, feedback: vi.fn() }).scan();
+    await new Scanner(document, { scores, feedback: vi.fn(), snippetScores: vi.fn() }).scan();
     const panel = document.querySelector(BADGE_TAG)!.shadowRoot!.querySelector('.panel')!;
     expect(panel.querySelector('img')).toBeNull();
     expect(panel.querySelector('li')!.textContent).toBe('<img src=x onerror=alert(1)>');
+  });
+});
+
+describe('cafe articles', () => {
+  const CAFE = 'https://cafe.naver.com/somecafe/123?art=abc';
+  const CAFE_RESULT = `<div>
+    <a href="https://cafe.naver.com/somecafe">우리동네 맘카페새 창 열림</a>
+    <a href="${CAFE}">무선청소기 추천 순위 TOP 7새 창 열림</a>
+    <a href="${CAFE}">업체로부터 제품을 제공받아 작성한 후기입니다 #청소기 #추천새 창 열림</a></div>`;
+
+  it('finds cafe articles with title and snippet, ignoring the cafe home link', () => {
+    document.body.innerHTML = CAFE_RESULT;
+    const [t, ...rest] = findTargets(document);
+    expect(rest).toHaveLength(0);
+    expect(t).toMatchObject({ kind: 'cafe', key: 'cafe:somecafe/123', title: '무선청소기 추천 순위 TOP 7' });
+    expect(t!.anchor.textContent).toContain('업체로부터');
+  });
+
+  it('scores snippets without polling and marks the badge as snippet-based', async () => {
+    document.body.innerHTML = CAFE_RESULT;
+    const scores = vi.fn();
+    const snippetScores = vi.fn(async (items: { url: string }[]) =>
+      items.map((i) => ({ ...ready(i.url, '', 82, 'high'), blog_id: null, source: 'cafe' as const, basis: 'snippet' as const })),
+    );
+    await new Scanner(document, { scores, feedback: vi.fn(), snippetScores }).scan();
+
+    expect(scores).not.toHaveBeenCalled();
+    expect(snippetScores).toHaveBeenCalledWith([
+      { url: CAFE, title: '무선청소기 추천 순위 TOP 7', snippet: '업체로부터 제품을 제공받아 작성한 후기입니다 #청소기 #추천' },
+    ]);
+    const root = document.querySelector(BADGE_TAG)!.shadowRoot!;
+    expect(root.querySelector('.label')!.textContent).toBe('양산형 의심 높음 · 요약');
+    expect(root.querySelector('.chip')!.classList.contains('snippet')).toBe(true);
+    expect(root.querySelector('.basis')!.textContent).toBe('카페 글 · 검색 요약문만 분석');
+    expect(root.querySelector('button.fb')).toBeNull();
+  });
+
+  it('labels blog results as full analysis', async () => {
+    document.body.innerHTML = RESULTS;
+    const scores = vi.fn(async (urls: string[]) => urls.map((u) => ready(u, 'b', 10, 'low')));
+    await new Scanner(document, { scores, feedback: vi.fn(), snippetScores: vi.fn() }).scan();
+    const root = document.querySelector(BADGE_TAG)!.shadowRoot!;
+    expect(root.querySelector('.label')!.textContent).toBe('양산형 의심 낮음');
+    expect(root.querySelector('.basis')!.textContent).toBe('블로그 · 최근 글 분석');
   });
 });

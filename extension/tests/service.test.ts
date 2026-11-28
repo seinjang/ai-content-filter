@@ -104,3 +104,18 @@ describe('ScoreService', () => {
     expect(await service.clientId()).toBe(first);
   });
 });
+
+describe('snippetScores', () => {
+  it('posts snippets to the snippet endpoint without caching', async () => {
+    const store = memoryStore();
+    const item = { url: 'https://cafe.naver.com/c/1', title: 't', snippet: 's' };
+    const fetch = vi.fn(async () => new Response(JSON.stringify({ results: [{ ...result(item.url, '', 'ready', 10), blog_id: null }] })));
+    const service = new ScoreService({ store, fetch: fetch as unknown as typeof globalThis.fetch, apiBase: async () => 'http://api' });
+
+    const [r] = await service.snippetScores([item]);
+
+    expect(r!.status).toBe('ready');
+    expect(fetch).toHaveBeenCalledWith('http://api/v1/snippets:score', expect.objectContaining({ body: JSON.stringify({ items: [item] }) }));
+    expect(store.data).toEqual({});
+  });
+});

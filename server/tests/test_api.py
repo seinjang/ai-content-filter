@@ -42,6 +42,8 @@ async def test_uncached_blog_is_pending_and_enqueued_once(client, redis, enqueue
             "score": None,
             "level": None,
             "reasons": [],
+            "source": "blog",
+            "basis": "full",
         }
     ]
     assert enqueued == [["blog_a"]]
@@ -130,4 +132,36 @@ async def test_feedback_rejects_non_blog_url(client):
 
 async def test_feedback_rejects_unknown_label(client):
     res = await client.post("/v1/feedback", json={"url": POST_A1, "label": "maybe"})
+    assert res.status_code == 422
+
+
+CAFE = "https://cafe.naver.com/somecafe/12345?art=abc"
+
+
+async def test_snippet_scores_cafe_article_without_caching(client, redis):
+    item = {
+        "url": CAFE,
+        "title": "무선청소기 추천 순위 TOP 7 총정리",
+        "snippet": "업체로부터 제품을 제공받아 작성 #무선청소기 #청소기추천 #가성비청소기 #살림템 "
+        "#청소기순위 #무선청소기추천 #청소템 #신혼가전",
+    }
+    res = await client.post("/v1/snippets:score", json={"items": [item]})
+
+    assert res.status_code == 200
+    [r] = res.json()["results"]
+    assert (r["status"], r["source"], r["basis"]) == ("ready", "cafe", "snippet")
+    assert r["level"] == "high"
+    assert "협찬·제휴 문구가 보임" in r["reasons"]
+    assert await redis.dbsize() == 0  # 클라이언트가 보낸 문구로 만든 점수는 저장하지 않음
+
+
+async def test_snippet_rejects_non_cafe_url(client):
+    item = {"url": "https://blog.naver.com/a/1", "title": "t", "snippet": "s"}
+    res = await client.post("/v1/snippets:score", json={"items": [item]})
+    assert res.json()["results"][0]["status"] == "invalid"
+
+
+async def test_snippet_limits_text_length(client):
+    item = {"url": CAFE, "title": "t", "snippet": "x" * 2001}
+    res = await client.post("/v1/snippets:score", json={"items": [item]})
     assert res.status_code == 422

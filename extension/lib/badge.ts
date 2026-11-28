@@ -7,7 +7,14 @@ export const BADGE_TAG = 'acf-badge';
 
 type BadgeState =
   | { kind: 'loading' }
-  | { kind: 'ready'; level: Level; score: number; reasons: string[] }
+  | {
+      kind: 'ready';
+      level: Level;
+      score: number;
+      reasons: string[];
+      source: 'blog' | 'cafe';
+      basis: 'full' | 'snippet';
+    }
   | { kind: 'unavailable' }
   | { kind: 'error' };
 
@@ -27,6 +34,8 @@ const STYLE = `
 .low { border-color: #1e9e5a; background: #e6f4ec; color: #146c3d; } .low .dot { background: #1e9e5a; }
 .medium { border-color: #e0a100; background: #fff4d6; color: #7a5600; } .medium .dot { background: #e0a100; }
 .high { border-color: #d93025; background: #d93025; color: #fff; } .high .dot { background: #fff; }
+.snippet { border-style: dashed; }
+.basis { color: #666; font-size: 12px; margin-bottom: 4px; }
 .panel { font-weight: 400; }
 .loading .dot { animation: pulse 1s infinite alternate; }
 @keyframes pulse { from { opacity: .3 } to { opacity: 1 } }
@@ -49,7 +58,14 @@ export interface Badge {
 
 export function stateFromResult(r: ScoreResult): BadgeState {
   if (r.status === 'ready' && r.level && r.score !== null)
-    return { kind: 'ready', level: r.level, score: r.score, reasons: r.reasons };
+    return {
+      kind: 'ready',
+      level: r.level,
+      score: r.score,
+      reasons: r.reasons,
+      source: r.source ?? 'blog',
+      basis: r.basis ?? 'full',
+    };
   if (r.status === 'unavailable') return { kind: 'unavailable' };
   if (r.status === 'pending') return { kind: 'loading' };
   return { kind: 'error' };
@@ -82,10 +98,18 @@ export function createBadge(doc: Document, onFeedback: (label: FeedbackLabel) =>
     const reasons = s.reasons.length
       ? `<ul>${s.reasons.map((r) => `<li>${escapeHtml(r)}</li>`).join('')}</ul>`
       : '<p class="ask">특별한 위험 신호 없음</p>';
-    panel.innerHTML = `<div class="score">의심도 ${s.score}점</div>${reasons}
-      <div class="ask">판정이 맞나요?</div>
+    const snippet = s.basis === 'snippet';
+    const basis = snippet
+      ? '카페 글 · 검색 요약문만 분석'
+      : `${s.source === 'cafe' ? '카페 글' : '블로그'} · 최근 글 분석`;
+    // 피드백 API는 아직 블로그 단위라 요약문 판정에는 버튼을 두지 않는다.
+    const feedback = snippet
+      ? '<div class="ask">요약문만 보고 판정해 정확도가 낮을 수 있어요.</div>'
+      : `<div class="ask">판정이 맞나요?</div>
       <div class="actions"><button class="fb" data-label="spam" type="button">양산형 맞음</button>
       <button class="fb" data-label="ok" type="button">양산형 아님</button></div>`;
+    panel.innerHTML = `<div class="basis">${basis}</div><div class="score">의심도 ${s.score}점</div>${reasons}
+      ${feedback}`;
     for (const btn of panel.querySelectorAll<HTMLButtonElement>('button.fb')) {
       btn.addEventListener('click', async () => {
         const actions = panel.querySelector('.actions')!;
@@ -111,7 +135,8 @@ export function createBadge(doc: Document, onFeedback: (label: FeedbackLabel) =>
           break;
         case 'ready':
           chip.classList.add(next.level);
-          label.textContent = LABELS[next.level];
+          if (next.basis === 'snippet') chip.classList.add('snippet');
+          label.textContent = LABELS[next.level] + (next.basis === 'snippet' ? ' · 요약' : '');
           chip.title = `의심도 ${next.score}점 · 클릭해서 근거 보기`;
           renderPanel(next);
           break;

@@ -15,8 +15,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.cache import LOCK_KEY, LOCK_TTL_SEC, SCORE_KEY
 from app.config import settings
 from app.db import Blog, Feedback
-from app.naver import parse_blog_post_url
-from app.scorer import level_for
+from app.naver import parse_blog_post_url, parse_cafe_article_url
+from app.scorer import level_for, score_snippet
+from app.signals import extract_snippet_signals
 
 
 @asynccontextmanager
@@ -102,6 +103,9 @@ class ScoreResult(BaseModel):
     score: int | None = None
     level: Literal["low", "medium", "high"] | None = None
     reasons: list[str] = []
+    source: Literal["blog", "cafe"] = "blog"
+    # full: 수집한 글로 판정, snippet: 검색 결과의 제목·요약문만으로 판정
+    basis: Literal["full", "snippet"] = "full"
 
 
 class ScoreBatchResponse(BaseModel):
@@ -154,6 +158,44 @@ async def score_batch(
             )
         else:
             results.append(ScoreResult(url=item.url, status="pending", blog_id=ref.blog_id))
+    return ScoreBatchResponse(results=results)
+
+
+class SnippetItem(BaseModel):
+    url: str = Field(max_length=2048)
+    title: str = Field(max_length=300)
+    snippet: str = Field(max_length=2000)
+
+
+class SnippetScoreRequest(BaseModel):
+    items: list[SnippetItem] = Field(min_length=1, max_length=settings.max_batch_size)
+
+
+@app.post("/v1/snippets:score")
+async def score_snippets(body: SnippetScoreRequest) -> ScoreBatchResponse:
+    """카페 글처럼 수집할 수 없는 글을 검색 결과 문구로 판정한다.
+
+    문구는 클라이언트가 보내 조작될 수 있으므로 저장·캐시하지 않고 요청마다 계산한다.
+    """
+    results = []
+    for item in body.items:
+        if parse_cafe_article_url(item.url) is None:
+            results.append(
+                ScoreResult(url=item.url, status="invalid", source="cafe", basis="snippet")
+            )
+            continue
+        score, reasons = score_snippet(extract_snippet_signals(item.title, item.snippet))
+        results.append(
+            ScoreResult(
+                url=item.url,
+                status="ready",
+                score=score,
+                level=level_for(score),
+                reasons=reasons,
+                source="cafe",
+                basis="snippet",
+            )
+        )
     return ScoreBatchResponse(results=results)
 
 

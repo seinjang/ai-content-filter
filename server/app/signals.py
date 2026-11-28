@@ -77,12 +77,16 @@ def is_affiliate(post: PostContent) -> bool:
 
 
 def keyword_density(post: PostContent) -> float:
+    return _keyword_density(post.title, post.text)
+
+
+def _keyword_density(title: str, text: str) -> float:
     """제목 단어가 본문에 반복되는 정도 (본문 어절 수 대비 등장 횟수)."""
-    keywords = {w for w in post.title.split() if len(w) >= 2}
-    words = post.text.split()
+    keywords = {w for w in title.split() if len(w) >= 2}
+    words = text.split()
     if not keywords or not words:
         return 0.0
-    return sum(post.text.count(k) for k in keywords) / len(words)
+    return sum(text.count(k) for k in keywords) / len(words)
 
 
 def template_heading_score(post: PostContent) -> float:
@@ -92,6 +96,25 @@ def template_heading_score(post: PostContent) -> float:
 
 def has_personal_markers(post: PostContent) -> bool:
     return bool(PERSONAL_MARKERS.search(post.text))
+
+
+SPONSORED_PHRASES = (*AFFILIATE_PHRASES, "협찬", "원고료", "제공받아", "업체로부터", "지원받아")
+TEMPLATE_TITLE = re.compile(
+    r"총정리|TOP ?\d|BEST ?\d|추천 ?순위|가격 ?비교|비교 ?정리", re.IGNORECASE
+)
+_HASHTAG = re.compile(r"#[^\s#]+")
+
+
+def extract_snippet_signals(title: str, snippet: str) -> dict:
+    """검색 결과의 제목·요약문만으로 계산하는 글 단위 신호. 카페 글처럼 수집할 수 없는 글에 쓴다."""
+    text = f"{title} {snippet}"
+    return {
+        "hashtag_count": len(_HASHTAG.findall(snippet)),
+        "sponsored": float(any(p in text for p in SPONSORED_PHRASES)),
+        "template_title": float(bool(TEMPLATE_TITLE.search(title))),
+        "keyword_density": round(_keyword_density(title, snippet), 3),
+        "personal_marker_ratio": float(bool(PERSONAL_MARKERS.search(text))),
+    }
 
 
 def _mean(values: list[float]) -> float:
