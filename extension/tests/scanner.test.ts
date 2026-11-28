@@ -91,6 +91,30 @@ describe('Scanner', () => {
     expect(scores).toHaveBeenLastCalledWith(['https://blog.naver.com/new_one/300']);
   });
 
+  it('places the badge before the longest link (under the title, above the summary)', async () => {
+    document.body.innerHTML = `<div>
+      <a href="https://blog.naver.com/info_bot/100">무선청소기 추천 TOP 7</a>
+      <a href="https://blog.naver.com/info_bot/100">무선청소기를 고를 때 흡입력과 무게를 먼저 보세요…</a></div>`;
+    const scores = vi.fn(async (urls: string[]) => urls.map((u) => ready(u, 'b', 10, 'low')));
+    await new Scanner(document, { scores, feedback: vi.fn() }).scan();
+
+    const links = document.querySelectorAll('a');
+    expect(links[1]!.previousElementSibling?.tagName.toLowerCase()).toBe(BADGE_TAG);
+    expect(links[0]!.nextElementSibling?.tagName.toLowerCase()).toBe(BADGE_TAG);
+  });
+
+  it('re-adds a badge the page removed while re-rendering', async () => {
+    const scores = vi.fn(async (urls: string[]) => urls.map((u) => ready(u, 'b', 10, 'low')));
+    const scanner = new Scanner(document, { scores, feedback: vi.fn() });
+    await scanner.scan();
+
+    document.querySelector(BADGE_TAG)!.remove();
+    await scanner.scan();
+
+    expect(document.querySelectorAll(BADGE_TAG)).toHaveLength(2);
+    expect(scores).toHaveBeenLastCalledWith(['https://blog.naver.com/info_bot/100']);
+  });
+
   it('shows an error badge when the server is unreachable', async () => {
     const scanner = new Scanner(document, { scores: vi.fn().mockRejectedValue(new Error('down')), feedback: vi.fn() });
     await scanner.scan();

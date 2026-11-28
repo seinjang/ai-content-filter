@@ -2,7 +2,7 @@
  * content script 본체: 검색 결과에서 블로그 글 링크를 찾아 배지를 붙이고 점수를 채운다.
  *
  * 네이버 검색 결과의 클래스명은 자주 바뀌므로, 클래스명 대신 "블로그 글 URL로 가는 링크"를 기준으로
- * 결과를 찾는다. 같은 글을 가리키는 링크(썸네일, 제목, 본문 요약) 중 텍스트가 가장 긴 것을 제목으로 본다.
+ * 결과를 찾는다. 같은 글을 가리키는 링크(썸네일, 제목, 본문 요약) 중 텍스트가 가장 긴 것을 기준으로 삼는다.
  */
 import { BADGE_TAG, createBadge, stateFromResult, type Badge } from './badge';
 import { parseBlogPostUrl } from './naver';
@@ -36,9 +36,10 @@ export function findTargets(root: ParentNode): Target[] {
       best.set(ref.key, { url: anchor.href, anchor });
     }
   }
-  // 이미 배지를 붙인 글은 제외 (같은 글의 다른 링크가 나중에 생겨도 중복 배지 방지)
+  // 배지가 붙어 있는 글은 제외. 표시를 링크가 아니라 배지에 두어서, 페이지가 다시 렌더링하며
+  // 배지만 지운 경우에도 다음 스캔에서 다시 붙는다.
   const done = new Set(
-    [...root.querySelectorAll<HTMLAnchorElement>(`a[${PROCESSED}]`)].map((a) => a.getAttribute(PROCESSED)),
+    [...root.querySelectorAll(`${BADGE_TAG}[${PROCESSED}]`)].map((b) => b.getAttribute(PROCESSED)),
   );
   return [...best.entries()].filter(([key]) => !done.has(key)).map(([, t]) => t);
 }
@@ -78,10 +79,11 @@ export class Scanner {
     if (!targets.length) return;
 
     for (const { url, anchor } of targets) {
-      anchor.setAttribute(PROCESSED, parseBlogPostUrl(url)!.key);
       const badge = createBadge(this.doc, (label) => this.deps.feedback(url, label));
+      badge.element.setAttribute(PROCESSED, parseBlogPostUrl(url)!.key);
       badge.update({ kind: 'loading' });
-      anchor.insertAdjacentElement('afterend', badge.element);
+      // 가장 긴 링크는 보통 본문 요약이라, 그 앞에 두면 제목 바로 아래에 보인다 (요약이 없으면 제목 앞).
+      anchor.insertAdjacentElement('beforebegin', badge.element);
       this.badges.set(url, [...(this.badges.get(url) ?? []), badge]);
     }
     await this.fetchAndRender(targets.map((t) => t.url), 0);
