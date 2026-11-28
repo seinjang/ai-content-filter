@@ -52,6 +52,20 @@ async def test_uncached_blog_is_pending_and_enqueued_once(client, redis, enqueue
     assert enqueued == [["blog_a"]]
 
 
+async def test_failed_enqueue_releases_lock(client, redis):
+    async def broken_enqueue(blog_ids):
+        raise ConnectionError("broker down")
+
+    app.dependency_overrides[get_enqueue] = lambda: broken_enqueue
+    try:
+        with pytest.raises(ConnectionError):
+            await client.post("/v1/scores:batch", json={"items": [{"url": POST_A1}]})
+    finally:
+        app.dependency_overrides.clear()
+
+    assert not await redis.exists(LOCK_KEY.format("blog_a"))
+
+
 async def test_cached_blog_is_ready_for_every_post(client, redis, enqueued):
     cached = {"status": "ready", "score": 82, "reasons": ["r1"]}
     await redis.set(SCORE_KEY.format("blog_a"), json.dumps(cached))
