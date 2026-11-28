@@ -99,13 +99,14 @@ export function createBadge(doc: Document, onFeedback: (label: FeedbackLabel) =>
       ? `<ul>${s.reasons.map((r) => `<li>${escapeHtml(r)}</li>`).join('')}</ul>`
       : '<p class="ask">특별한 위험 신호 없음</p>';
     const snippet = s.basis === 'snippet';
-    const basis = snippet
-      ? '카페 글 · 검색 요약문만 분석'
-      : `${s.source === 'cafe' ? '카페 글' : '블로그'} · 최근 글 분석`;
-    // 피드백 API는 아직 블로그 단위라 요약문 판정에는 버튼을 두지 않는다.
+    const cafe = s.source === 'cafe';
+    const basis = snippet ? '카페 글 · 검색 요약문만 분석' : cafe ? '카페 글 · 본문 전체 분석' : '블로그 · 최근 글 분석';
+    // 피드백 API는 아직 블로그 단위라 카페 글 판정에는 버튼을 두지 않는다.
     const feedback = snippet
-      ? '<div class="ask">요약문만 보고 판정해 정확도가 낮을 수 있어요.</div>'
-      : `<div class="ask">판정이 맞나요?</div>
+      ? '<div class="ask">요약문만 보고 판정해 정확도가 낮을 수 있어요. 글을 열면 본문으로 다시 분석해요.</div>'
+      : cafe
+        ? ''
+        : `<div class="ask">판정이 맞나요?</div>
       <div class="actions"><button class="fb" data-label="spam" type="button">양산형 맞음</button>
       <button class="fb" data-label="ok" type="button">양산형 아님</button></div>`;
     panel.innerHTML = `<div class="basis">${basis}</div><div class="score">의심도 ${s.score}점</div>${reasons}

@@ -1,6 +1,6 @@
 import { ScoreService } from '@/lib/service';
 import { getApiBase } from '@/lib/settings';
-import type { FeedbackResponse, Message, ScoresResponse } from '@/lib/types';
+import type { ArticleResponse, FeedbackResponse, Message, ScoresResponse } from '@/lib/types';
 
 export default defineBackground(() => {
   const service = new ScoreService({
@@ -24,6 +24,12 @@ export default defineBackground(() => {
         .snippetScores(msg.items)
         .then((results): ScoresResponse => ({ ok: true, results }))
         .catch((e: unknown): ScoresResponse => ({ ok: false, error: String(e) }));
+    }
+    if (msg.type === 'articleScore') {
+      return service
+        .articleScore(msg.item)
+        .then((result): ArticleResponse => ({ ok: true, result }))
+        .catch((e: unknown): ArticleResponse => ({ ok: false, error: String(e) }));
     }
     if (msg.type === 'feedback') {
       return service

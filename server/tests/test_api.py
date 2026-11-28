@@ -165,3 +165,35 @@ async def test_snippet_limits_text_length(client):
     item = {"url": CAFE, "title": "t", "snippet": "x" * 2001}
     res = await client.post("/v1/snippets:score", json={"items": [item]})
     assert res.status_code == 422
+
+
+async def test_article_body_scores_full_without_caching(client, redis):
+    body = {
+        "url": CAFE,
+        "title": "무선청소기 추천",
+        "headings": ["목차", "장점", "단점", "총정리"],
+        "paragraphs": [
+            "업체로부터 제품을 제공받아 작성했습니다.",
+            "무선청소기 추천 무선청소기 추천",
+        ],
+        "links": ["https://link.coupang.com/a/xyz"],
+    }
+    res = await client.post("/v1/articles:score", json=body)
+
+    assert res.status_code == 200
+    r = res.json()
+    assert (r["status"], r["source"], r["basis"], r["level"]) == ("ready", "cafe", "full", "high")
+    assert "협찬·제휴 문구나 제휴 링크가 있음" in r["reasons"]
+    assert await redis.dbsize() == 0
+
+
+async def test_article_body_rejects_non_cafe_url(client):
+    body = {"url": "https://blog.naver.com/a/1", "title": "t", "paragraphs": ["p"]}
+    res = await client.post("/v1/articles:score", json=body)
+    assert res.json()["status"] == "invalid"
+
+
+async def test_article_body_limits_size(client):
+    body = {"url": CAFE, "title": "t", "paragraphs": ["x" * 5001]}
+    res = await client.post("/v1/articles:score", json=body)
+    assert res.status_code == 422

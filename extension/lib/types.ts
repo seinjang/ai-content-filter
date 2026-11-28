@@ -21,12 +21,23 @@ export interface SnippetItem {
   snippet: string;
 }
 
+/** 사용자가 연 카페 글의 본문 (서버 /v1/articles:score 요청) */
+export interface ArticleItem {
+  url: string;
+  title: string;
+  paragraphs: string[];
+  headings: string[];
+  links: string[];
+}
+
 export type FeedbackLabel = 'spam' | 'ok';
 
 export type Message =
   | { type: 'scores'; urls: string[] }
   | { type: 'snippetScores'; items: SnippetItem[] }
+  | { type: 'articleScore'; item: ArticleItem }
   | { type: 'feedback'; url: string; label: FeedbackLabel };
 
 export type ScoresResponse = { ok: true; results: ScoreResult[] } | { ok: false; error: string };
+export type ArticleResponse = { ok: true; result: ScoreResult } | { ok: false; error: string };
 export type FeedbackResponse = { ok: boolean; error?: string };

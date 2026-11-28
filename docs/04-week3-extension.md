@@ -135,8 +135,9 @@ stateDiagram-v2
 | `host_permissions`: `localhost:8000`, `127.0.0.1:8000` | 기본 분석 서버 |
 | `optional_host_permissions`: 모든 http(s) | 옵션에서 다른 서버 주소를 저장할 때 **그 주소만** 사용자 승인으로 요청 |
 | content script: `search.naver.com`, `m.search.naver.com` | 배지를 붙일 페이지 |
+| content script: `cafe.naver.com` (모든 프레임) | 사용자가 연 카페 글을 본문으로 판정 ([05](05-cafe-snippet.md)) |
 
-방문 기록, 탭 목록 같은 권한은 쓰지 않는다. 서버로 가는 정보는 검색 결과의 블로그 글 URL과, 피드백 시 익명 설치 ID(서버에는 해시만 저장)뿐이다.
+방문 기록, 탭 목록 같은 권한은 쓰지 않는다. 서버로 가는 정보는 검색 결과의 블로그 글 URL, 카페 글의 검색 결과 제목·요약문, 사용자가 연 카페 글의 본문, 피드백 시 익명 설치 ID(서버에는 해시만 저장)다. 카페 글 문구와 본문은 서버에 저장하지 않는다.
 
 ---
 

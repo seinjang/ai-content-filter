@@ -16,8 +16,9 @@ from app.cache import LOCK_KEY, LOCK_TTL_SEC, SCORE_KEY
 from app.config import settings
 from app.db import Blog, Feedback
 from app.naver import parse_blog_post_url, parse_cafe_article_url
-from app.scorer import level_for, score_snippet
-from app.signals import extract_snippet_signals
+from app.parsers import PostContent
+from app.scorer import level_for, score_article, score_snippet
+from app.signals import extract_article_signals, extract_snippet_signals
 
 
 @asynccontextmanager
@@ -197,6 +198,34 @@ async def score_snippets(body: SnippetScoreRequest) -> ScoreBatchResponse:
             )
         )
     return ScoreBatchResponse(results=results)
+
+
+class ArticleScoreRequest(BaseModel):
+    url: str = Field(max_length=2048)
+    title: str = Field(max_length=300)
+    paragraphs: list[Annotated[str, Field(max_length=5000)]] = Field(max_length=1000)
+    headings: list[Annotated[str, Field(max_length=300)]] = Field(default=[], max_length=200)
+    links: list[Annotated[str, Field(max_length=2048)]] = Field(default=[], max_length=500)
+
+
+@app.post("/v1/articles:score")
+async def score_article_body(body: ArticleScoreRequest) -> ScoreResult:
+    """사용자가 연 카페 글의 본문으로 판정한다. 본문도 클라이언트가 보내므로 저장하지 않는다."""
+    if parse_cafe_article_url(body.url) is None:
+        return ScoreResult(url=body.url, status="invalid", source="cafe", basis="full")
+    post = PostContent(
+        title=body.title, paragraphs=body.paragraphs, headings=body.headings, links=body.links
+    )
+    score, reasons = score_article(extract_article_signals(post))
+    return ScoreResult(
+        url=body.url,
+        status="ready",
+        score=score,
+        level=level_for(score),
+        reasons=reasons,
+        source="cafe",
+        basis="full",
+    )
 
 
 # --- feedback -------------------------------------------------------------

@@ -117,6 +117,17 @@ def extract_snippet_signals(title: str, snippet: str) -> dict:
     }
 
 
+def extract_article_signals(post: PostContent) -> dict:
+    """사용자가 연 글의 본문으로 계산하는 글 단위 신호 (카페 글 열람 시)."""
+    return {
+        "hashtag_count": len(_HASHTAG.findall(post.text)),
+        "sponsored": float(is_affiliate(post) or any(p in post.text for p in SPONSORED_PHRASES)),
+        "template_heading_score": round(template_heading_score(post), 3),
+        "keyword_density": round(keyword_density(post), 3),
+        "personal_marker_ratio": float(has_personal_markers(post)),
+    }
+
+
 def _mean(values: list[float]) -> float:
     return sum(values) / len(values) if values else 0.0
 
