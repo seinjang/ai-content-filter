@@ -53,9 +53,28 @@ def level_for(score: int) -> str:
     return "high"
 
 
-def score_blog(signals: dict) -> tuple[int, list[str]]:
+SNIPPET_SCORING_VERSION = "snippet-v1"
+SNIPPET_RULES = [
+    Rule("sponsored", 0.35, 0.0, 1.0, lambda v: "협찬·제휴 문구가 보임"),
+    Rule("hashtag_count", 0.30, 3, 10, lambda v: f"해시태그를 많이 나열 ({v:.0f}개)"),
+    Rule("template_title", 0.20, 0.0, 1.0, lambda v: "총정리·TOP·추천 순위 같은 정형화된 제목"),
+    Rule(
+        "keyword_density",
+        0.15,
+        0.15,
+        0.40,
+        lambda v: f"제목 키워드를 요약문에 과하게 반복 ({v:.2f})",
+    ),
+]
+
+
+def score_snippet(signals: dict) -> tuple[int, list[str]]:
+    return score_blog(signals, SNIPPET_RULES)
+
+
+def score_blog(signals: dict, rules: list[Rule] = RULES) -> tuple[int, list[str]]:
     contributions = []
-    for rule in RULES:
+    for rule in rules:
         value = signals.get(rule.signal, 0.0)
         risk = _ramp(value, rule.low, rule.high)
         contributions.append((rule.weight * risk, risk, rule, value))

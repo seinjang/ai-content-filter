@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseBlogPostUrl } from '@/lib/naver';
+import { parseBlogPostUrl, parseCafeArticleUrl } from '@/lib/naver';
 
 describe('parseBlogPostUrl', () => {
   it.each([
@@ -27,5 +27,25 @@ describe('parseBlogPostUrl', () => {
     'not a url',
   ])('rejects %s', (url) => {
     expect(parseBlogPostUrl(url)).toBeNull();
+  });
+});
+
+describe('parseCafeArticleUrl', () => {
+  it.each([
+    'https://cafe.naver.com/ksm60111/12345?art=ZXh0ZXJuYWw',
+    'https://m.cafe.naver.com/ksm60111/12345',
+    'https://cafe.naver.com/ksm60111/12345/',
+  ])('parses %s', (url) => {
+    expect(parseCafeArticleUrl(url)).toEqual({ cafe: 'ksm60111', articleId: '12345', key: 'cafe:ksm60111/12345' });
+  });
+
+  it.each([
+    'https://cafe.naver.com/ksm60111',
+    'https://cafe.naver.com/ksm60111/not-a-number',
+    'https://cafe.naver.com.evil.com/ksm60111/12345',
+    'https://blog.naver.com/ksm60111/12345',
+    'not a url',
+  ])('rejects %s', (url) => {
+    expect(parseCafeArticleUrl(url)).toBeNull();
   });
 });

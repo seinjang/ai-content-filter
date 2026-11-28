@@ -1,6 +1,6 @@
 import pytest
 
-from app.naver import BlogPostRef, parse_blog_post_url
+from app.naver import BlogPostRef, CafeArticleRef, parse_blog_post_url, parse_cafe_article_url
 
 
 @pytest.mark.parametrize(
@@ -35,3 +35,29 @@ def test_parses_supported_formats(url):
 )
 def test_rejects_other_urls(url):
     assert parse_blog_post_url(url) is None
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://cafe.naver.com/ksm60111/12345?art=ZXh0ZXJuYWw",
+        "https://m.cafe.naver.com/ksm60111/12345",
+        "https://cafe.naver.com/ksm60111/12345/",
+    ],
+)
+def test_parses_cafe_article(url):
+    assert parse_cafe_article_url(url) == CafeArticleRef("ksm60111", 12345)
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://cafe.naver.com/ksm60111",  # 카페 홈
+        "https://cafe.naver.com/ksm60111/not-a-number",
+        "https://cafe.naver.com.evil.com/ksm60111/12345",
+        "https://blog.naver.com/ksm60111/12345",
+        "not a url",
+    ],
+)
+def test_rejects_non_cafe_article(url):
+    assert parse_cafe_article_url(url) is None

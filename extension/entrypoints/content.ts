@@ -13,6 +13,11 @@ export default defineContentScript({
         if (!res.ok) throw new Error(res.error);
         return res.results;
       },
+      async snippetScores(items) {
+        const res = await send<ScoresResponse>({ type: 'snippetScores', items });
+        if (!res.ok) throw new Error(res.error);
+        return res.results;
+      },
       async feedback(url, label) {
         const res = await send<FeedbackResponse>({ type: 'feedback', url, label });
         if (!res.ok) throw new Error(res.error);
