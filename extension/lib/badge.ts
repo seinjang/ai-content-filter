@@ -18,14 +18,16 @@ const LABELS: Record<Level, string> = {
 };
 
 const STYLE = `
-:host { all: initial; display: inline-block; position: relative; margin-left: 6px; vertical-align: middle;
-  font: 12px/1.4 -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
-.chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px;
-  border: 1px solid #d0d4da; background: #fff; color: #333; cursor: pointer; white-space: nowrap; }
+:host { all: initial; display: inline-block; align-self: flex-start; position: relative; margin: 4px 0;
+  vertical-align: middle; font: 600 13px/1.4 -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font: inherit;
+  border: 1.5px solid #c4c9d0; background: #f1f3f5; color: #444; cursor: pointer; white-space: nowrap; }
 .chip:focus-visible { outline: 2px solid #3b82f6; outline-offset: 1px; }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: #9aa0a6; }
-.low .dot { background: #1e9e5a; } .medium .dot { background: #e0a100; } .high .dot { background: #d93025; }
-.high { border-color: #f1b4ae; background: #fdf1f0; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: #9aa0a6; }
+.low { border-color: #1e9e5a; background: #e6f4ec; color: #146c3d; } .low .dot { background: #1e9e5a; }
+.medium { border-color: #e0a100; background: #fff4d6; color: #7a5600; } .medium .dot { background: #e0a100; }
+.high { border-color: #d93025; background: #d93025; color: #fff; } .high .dot { background: #fff; }
+.panel { font-weight: 400; }
 .loading .dot { animation: pulse 1s infinite alternate; }
 @keyframes pulse { from { opacity: .3 } to { opacity: 1 } }
 .panel { position: absolute; z-index: 2147483647; top: calc(100% + 6px); left: 0; width: 260px; padding: 10px 12px;
