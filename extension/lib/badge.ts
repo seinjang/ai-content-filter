@@ -1,0 +1,130 @@
+/**
+ * 검색 결과 제목 옆에 붙는 배지. Shadow DOM으로 네이버 페이지 스타일과 격리한다.
+ */
+import type { FeedbackLabel, Level, ScoreResult } from './types';
+
+export const BADGE_TAG = 'acf-badge';
+
+type BadgeState =
+  | { kind: 'loading' }
+  | { kind: 'ready'; level: Level; score: number; reasons: string[] }
+  | { kind: 'unavailable' }
+  | { kind: 'error' };
+
+const LABELS: Record<Level, string> = {
+  low: '양산형 의심 낮음',
+  medium: '양산형 의심 보통',
+  high: '양산형 의심 높음',
+};
+
+const STYLE = `
+:host { all: initial; display: inline-block; position: relative; margin-left: 6px; vertical-align: middle;
+  font: 12px/1.4 -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px;
+  border: 1px solid #d0d4da; background: #fff; color: #333; cursor: pointer; white-space: nowrap; }
+.chip:focus-visible { outline: 2px solid #3b82f6; outline-offset: 1px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #9aa0a6; }
+.low .dot { background: #1e9e5a; } .medium .dot { background: #e0a100; } .high .dot { background: #d93025; }
+.high { border-color: #f1b4ae; background: #fdf1f0; }
+.loading .dot { animation: pulse 1s infinite alternate; }
+@keyframes pulse { from { opacity: .3 } to { opacity: 1 } }
+.panel { position: absolute; z-index: 2147483647; top: calc(100% + 6px); left: 0; width: 260px; padding: 10px 12px;
+  border: 1px solid #d0d4da; border-radius: 8px; background: #fff; box-shadow: 0 4px 16px rgba(0,0,0,.12); color: #222; }
+.panel[hidden] { display: none; }
+.score { font-weight: 600; margin-bottom: 6px; }
+ul { margin: 0 0 8px; padding-left: 16px; } li { margin: 2px 0; }
+.ask { color: #666; margin-bottom: 6px; }
+.actions { display: flex; gap: 6px; }
+button.fb { flex: 1; padding: 4px 6px; border: 1px solid #d0d4da; border-radius: 6px; background: #f8f9fa; cursor: pointer; font: inherit; }
+button.fb:hover { background: #eef0f2; }
+.thanks { color: #1e9e5a; }
+`;
+
+export interface Badge {
+  element: HTMLElement;
+  update(state: BadgeState): void;
+}
+
+export function stateFromResult(r: ScoreResult): BadgeState {
+  if (r.status === 'ready' && r.level && r.score !== null)
+    return { kind: 'ready', level: r.level, score: r.score, reasons: r.reasons };
+  if (r.status === 'unavailable') return { kind: 'unavailable' };
+  if (r.status === 'pending') return { kind: 'loading' };
+  return { kind: 'error' };
+}
+
+export function createBadge(doc: Document, onFeedback: (label: FeedbackLabel) => Promise<void>): Badge {
+  const host = doc.createElement(BADGE_TAG);
+  const root = host.attachShadow({ mode: 'open' });
+  root.innerHTML = `<style>${STYLE}</style>
+    <button class="chip loading" type="button" aria-expanded="false"><span class="dot"></span><span class="label">분석 중</span></button>
+    <div class="panel" role="dialog" hidden></div>`;
+
+  const chip = root.querySelector<HTMLButtonElement>('.chip')!;
+  const label = root.querySelector<HTMLSpanElement>('.label')!;
+  const panel = root.querySelector<HTMLDivElement>('.panel')!;
+  let state: BadgeState = { kind: 'loading' };
+
+  // 검색 결과 링크 안에 들어가도 페이지 이동이 일어나지 않게 막는다.
+  host.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+  chip.addEventListener('click', () => {
+    if (state.kind !== 'ready') return;
+    panel.hidden = !panel.hidden;
+    chip.setAttribute('aria-expanded', String(!panel.hidden));
+  });
+
+  function renderPanel(s: Extract<BadgeState, { kind: 'ready' }>) {
+    const reasons = s.reasons.length
+      ? `<ul>${s.reasons.map((r) => `<li>${escapeHtml(r)}</li>`).join('')}</ul>`
+      : '<p class="ask">특별한 위험 신호 없음</p>';
+    panel.innerHTML = `<div class="score">의심도 ${s.score}점</div>${reasons}
+      <div class="ask">판정이 맞나요?</div>
+      <div class="actions"><button class="fb" data-label="spam" type="button">양산형 맞음</button>
+      <button class="fb" data-label="ok" type="button">양산형 아님</button></div>`;
+    for (const btn of panel.querySelectorAll<HTMLButtonElement>('button.fb')) {
+      btn.addEventListener('click', async () => {
+        const actions = panel.querySelector('.actions')!;
+        try {
+          await onFeedback(btn.dataset.label as FeedbackLabel);
+          actions.outerHTML = '<div class="thanks">의견 고마워요. 판정 개선에 쓸게요.</div>';
+        } catch {
+          actions.insertAdjacentHTML('afterend', '<div class="ask">전송 실패. 잠시 후 다시 시도해 주세요.</div>');
+        }
+      });
+    }
+  }
+
+  return {
+    element: host,
+    update(next) {
+      state = next;
+      chip.className = 'chip';
+      switch (next.kind) {
+        case 'loading':
+          chip.classList.add('loading');
+          label.textContent = '분석 중';
+          break;
+        case 'ready':
+          chip.classList.add(next.level);
+          label.textContent = LABELS[next.level];
+          chip.title = `의심도 ${next.score}점 · 클릭해서 근거 보기`;
+          renderPanel(next);
+          break;
+        case 'unavailable':
+          label.textContent = '분석 불가';
+          chip.title = '삭제되었거나 비공개인 블로그';
+          break;
+        case 'error':
+          label.textContent = '분석 실패';
+          break;
+      }
+    },
+  };
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+}

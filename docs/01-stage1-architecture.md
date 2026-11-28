@@ -170,8 +170,8 @@ GET  /healthz, /metrics
 | 주차 | 내용 | 상세 문서 | 상태 |
 |---|---|---|---|
 | 1주차 | 서버 뼈대, DB 스키마, Docker Compose, CI | [02](02-week1-server-skeleton.md) | 완료 |
-| 2주차 | 크롤러, 신호 추출, rule v1 스코어러, Celery 워커 | [03](03-week2-worker-pipeline.md) | 진행 중 |
-| 3주차 | 크롬 확장, 배지 UI, API 연동 | - | 예정 |
+| 2주차 | 크롤러, 신호 추출, rule v1 스코어러, Celery 워커 | [03](03-week2-worker-pipeline.md) | 완료 |
+| 3주차 | 크롬 확장, 배지 UI, API 연동 | [04](04-week3-extension.md) | 진행 중 |
 | 4주차 | 캐싱·rate limit 개선, 메트릭 대시보드, README | - | 예정 |
 
 1. **1주차:** 모노레포 세팅(`extension/`, `server/`, `infra/`), Docker Compose(Postgres, Redis), FastAPI 뼈대

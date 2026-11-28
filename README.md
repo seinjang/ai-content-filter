@@ -2,6 +2,8 @@
 
 네이버 검색 결과에서 양산형/자동화 블로그 글을 구분해 주는 크롬 확장 + 분석 서버.
 
+![검색 결과 배지](docs/images/extension-e2e.png)
+
 ## 폴더 구조
 
 ```
@@ -44,6 +46,23 @@ uv run celery -A app.worker worker -Q analyze --loglevel=info
 
 설정은 환경변수(`ACF_DATABASE_URL`, `ACF_REDIS_URL`) 또는 `server/.env`로 바꿀 수 있습니다.
 
+### 크롬 확장
+
+[Node.js](https://nodejs.org/) 22 필요. 서버를 먼저 띄워 두고:
+
+```bash
+cd extension
+npm install
+npm run build
+```
+
+1. Chrome에서 `chrome://extensions` 열기
+2. 오른쪽 위 **개발자 모드** 켜기
+3. **압축해제된 확장 프로그램을 로드합니다** → `extension/.output/chrome-mv3` 폴더 선택
+4. 네이버에서 검색하면 블로그 결과 옆에 배지가 붙습니다
+
+분석 서버 주소는 확장 옵션 페이지에서 바꿀 수 있습니다 (기본값 `http://127.0.0.1:8000`).
+
 ### 테스트
 
 실제 PostgreSQL(`acf_test` DB)과 Redis(DB 15)를 사용합니다.
@@ -51,6 +70,10 @@ uv run celery -A app.worker worker -Q analyze --loglevel=info
 ```bash
 cd server
 uv run pytest
+
+cd extension
+npm test
+npm run e2e   # 서버·워커 실행 후, 실제 Chrome으로 확인
 ```
 
 ## 단계별 로드맵
@@ -67,3 +90,4 @@ uv run pytest
 - [01 1단계 아키텍처](docs/01-stage1-architecture.md)
 - [02 1주차: 서버 뼈대](docs/02-week1-server-skeleton.md)
 - [03 2주차: 워커 파이프라인](docs/03-week2-worker-pipeline.md)
+- [04 3주차: 크롬 확장](docs/04-week3-extension.md)
